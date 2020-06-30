@@ -80,86 +80,6 @@ double osc(double dHertz, double dTime, int nType)
     }
 }
 
-struct sEnvelopeADSR
-{
-    double dAttackTime;
-    double dDecayTime;
-    double dReleaseTime;
-    
-    double dSustainAmplitude;
-    double dStartAmplitude;
-    
-    double dTriggerOnTime;
-    double dTriggerOffTime;
-    
-    bool bNoteOn;
-    
-    sEnvelopeADSR()
-    {
-        dAttackTime = 0.100;
-        dDecayTime = 0.01;
-        dStartAmplitude = 1.0;
-        dSustainAmplitude = 0.8;
-        dReleaseTime = 0.200;
-        dTriggerOnTime = 0.0;
-        dTriggerOffTime = 0.0;
-        bNoteOn = false;
-    }
-    
-    double GetAmplitude(double dTime) // dTime = wall time
-    {
-        double dAmplitude = 0.0;
-        
-        double dLifeTime = dTime - dTriggerOnTime;
-        
-        if (bNoteOn)
-        {
-            // ADS
-            
-            // Attack
-            if(dLifeTime <= dAttackTime)
-                dAmplitude = (dLifeTime / dAttackTime) * dStartAmplitude;
-            
-            // Decay
-            if(dLifeTime > dAttackTime && dLifeTime <= (dAttackTime + dDecayTime))
-                dAmplitude = ((dLifeTime - dAttackTime) / dDecayTime) * (dSustainAmplitude - dStartAmplitude) + dStartAmplitude;
-            
-            // Sustain
-            if(dLifeTime > (dAttackTime + dDecayTime))
-            {
-                dAmplitude = dSustainAmplitude;
-            }
-        }
-        else
-        {
-            // Release
-            dAmplitude = ((dTime - dTriggerOffTime) / dReleaseTime) * (0.0 - dSustainAmplitude) + dSustainAmplitude;
-        }
-        
-        if (dAmplitude <= 0.0001)
-        {
-            dAmplitude = 0.0;
-        }
-        
-        
-        
-        return dAmplitude;
-    }
-    
-    void NoteOn(double dTimeOn)
-    {
-        dTriggerOnTime = dTimeOn;
-        bNoteOn = true;
-    }
-    
-    void NoteOff(double dTimeOff)
-    {
-        dTriggerOffTime = dTimeOff;
-        bNoteOn = false;
-    }
-    
-};
-
 double dFrequencyOutput = 0.0;
 double dOctaveBaseFrequency = 110.0; // A2		// frequency of octave represented by keyboard
 double d12thRootOf2 = pow(2.0, 1.0 / 12.0);		// assuming western 12 notes per ocatve
@@ -173,101 +93,8 @@ double MakeNoise(double dTime)
         + osc(dFrequencyOutput * 1.0, dTime, 1)
     );
     
-//    double dOutput = 1.0 * (sin(dFrequencyOutput * 2.0 * M_PI * dTime) + sin((dFrequencyOutput + 20.0) * 2.0 * M_PI * dTime));
-    
-    return dOutput * 0.4;
-//    if(dOutput > 0.0)
-//        return 0.2;
-//    else
-//        return -0.2;
-    
+    return dOutput * 0.4;   // master volume
 }
-
-#if 0
-
-extern jack_default_audio_sample_t note_frqs[128];
-jack_default_audio_sample_t note_time[128];
-jack_default_audio_sample_t note_wave[128];
-
-void calc_note_frqs(jack_default_audio_sample_t srate)
-{
-    int i;
-    
-    for(i=0; i<128; i++)
-    {
-        note_frqs[i] = (2.0 * 440.0 / 32.0) * pow(2, (((jack_default_audio_sample_t)i - 9.0) / 12.0)) / srate;
-        
-        note_time[i] = (2.0 / 32.0) * pow(2.0, (((jack_default_audio_sample_t)i - 9.0) / 12.0)) / srate;
-        
-        note_wave[i] = (440.0 / 32.0) * pow(2, (((jack_default_audio_sample_t)i - 9.0) / 12.0));
-        
-    }
-    
-    
-/*
-    // MIDI note to wave frequency
-    float noteToFreq(int note)
-    {
-        int a = 440; //frequency of A (coomon value is 440Hz)
-        return (a / 32) * pow(2, ((note - 9.0) / 12.0));
-    }
- 
-    m_ramp += m_note_frqs[m_note];
-    m_ramp = (m_ramp > 1.0) ? m_ramp - 2.0 : m_ramp;
-
-    calculate_note = m_note_on*sin(2*M_PI*m_ramp); 
- */
-    
-    /* Debug */
-#if 1
-    int note = 69;  // 440 HZ = 69
-    jack_default_audio_sample_t calculate_note = 0.0;
-    jack_default_audio_sample_t a_ramp=0.0;
-    
-    jack_default_audio_sample_t a_ramp_time=0.0;
-    jack_default_audio_sample_t a_ramp_wave=0.0;
-    
-    double dOutput = 0.0;
-    double dTime = 0.0;
-    
-    double dTimeStep = 2.0 * (1.0 / (double)srate) ;
-    double m_dGlobalTime = 0.0;
-    
-    double freq_time = 32.0 * pow(2.0, (((jack_default_audio_sample_t)i - 9.0) / 12.0)) / srate;
-    
-    for (int ii = 0; ii < 20; ii++)
-    {
-        a_ramp += note_frqs[note];
-        a_ramp = (a_ramp > 1.0) ? a_ramp - 2.0 : a_ramp;
-
-        calculate_note = 1 * sin(2 * M_PI * a_ramp);
-        
-/*        
-        a_ramp_time += note_time[note];
-        a_ramp_time = (a_ramp_time > 1.0) ? a_ramp_time - 2.0 : a_ramp_time;
-        
-        dTime = a_ramp_time;
-        dOutput = sin(440 * 2.0 * M_PI * dTime);
-*/    
-        
-        m_dGlobalTime = m_dGlobalTime + dTimeStep;
-        
-        a_ramp_wave += (note_wave[note] * 2) / srate ;
-        a_ramp_wave = (a_ramp_wave > 1.0) ? a_ramp_wave - 2.0 : a_ramp_wave;
-        
-        dTime = m_dGlobalTime;
-        dOutput = sin(note_wave[note] * 2.0 * M_PI * dTime);
-        
-        printf("out value = %f: note_freqs = %f: a_ramp = %f\n", calculate_note, note_frqs[note], a_ramp);
-        
-        printf("dOutput = %f: note_time = %f: note_wave = %f \n", dOutput, note_time[note], note_wave[note] );
-        
-        printf("Global time %f: dTimeStep = %f: freq_time = %f\n", m_dGlobalTime, dTimeStep, freq_time);
-    }
-#endif // 0
-}
-
-#endif // 0
 
 int srate(jack_nframes_t nframes, void *arg)
 {
@@ -303,6 +130,7 @@ int main(int argc, char** argv)
     // Link noise function with sound machine
     sound.SetUserFunction(MakeNoise);
     sound.SetFreqVariable(dFrequencyOutput);
+    sound.SetEnvelope(envelope);
     
     jack_set_sample_rate_callback (jackclient, srate, 0);
     
