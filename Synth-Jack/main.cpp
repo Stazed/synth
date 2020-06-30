@@ -31,11 +31,6 @@ extern jack_client_t *jackclient;
 jack_status_t status;
 char jackcliname[64];
 
-double dFrequencyOutput = 0.0;
-double dOctaveBaseFrequency = 110.0; // A2		// frequency of octave represented by keyboard
-double d12thRootOf2 = pow(2.0, 1.0 / 12.0);		// assuming western 12 notes per ocatve
-
-
 static void signal_handler(int sig)
 {
     jack_client_close(jackclient);
@@ -85,9 +80,98 @@ double osc(double dHertz, double dTime, int nType)
     }
 }
 
+struct sEnvelopeADSR
+{
+    double dAttackTime;
+    double dDecayTime;
+    double dReleaseTime;
+    
+    double dSustainAmplitude;
+    double dStartAmplitude;
+    
+    double dTriggerOnTime;
+    double dTriggerOffTime;
+    
+    bool bNoteOn;
+    
+    sEnvelopeADSR()
+    {
+        dAttackTime = 0.100;
+        dDecayTime = 0.01;
+        dStartAmplitude = 1.0;
+        dSustainAmplitude = 0.8;
+        dReleaseTime = 0.200;
+        dTriggerOnTime = 0.0;
+        dTriggerOffTime = 0.0;
+        bNoteOn = false;
+    }
+    
+    double GetAmplitude(double dTime) // dTime = wall time
+    {
+        double dAmplitude = 0.0;
+        
+        double dLifeTime = dTime - dTriggerOnTime;
+        
+        if (bNoteOn)
+        {
+            // ADS
+            
+            // Attack
+            if(dLifeTime <= dAttackTime)
+                dAmplitude = (dLifeTime / dAttackTime) * dStartAmplitude;
+            
+            // Decay
+            if(dLifeTime > dAttackTime && dLifeTime <= (dAttackTime + dDecayTime))
+                dAmplitude = ((dLifeTime - dAttackTime) / dDecayTime) * (dSustainAmplitude - dStartAmplitude) + dStartAmplitude;
+            
+            // Sustain
+            if(dLifeTime > (dAttackTime + dDecayTime))
+            {
+                dAmplitude = dSustainAmplitude;
+            }
+        }
+        else
+        {
+            // Release
+            dAmplitude = ((dTime - dTriggerOffTime) / dReleaseTime) * (0.0 - dSustainAmplitude) + dSustainAmplitude;
+        }
+        
+        if (dAmplitude <= 0.0001)
+        {
+            dAmplitude = 0.0;
+        }
+        
+        
+        
+        return dAmplitude;
+    }
+    
+    void NoteOn(double dTimeOn)
+    {
+        dTriggerOnTime = dTimeOn;
+        bNoteOn = true;
+    }
+    
+    void NoteOff(double dTimeOff)
+    {
+        dTriggerOffTime = dTimeOff;
+        bNoteOn = false;
+    }
+    
+};
+
+double dFrequencyOutput = 0.0;
+double dOctaveBaseFrequency = 110.0; // A2		// frequency of octave represented by keyboard
+double d12thRootOf2 = pow(2.0, 1.0 / 12.0);		// assuming western 12 notes per ocatve
+sEnvelopeADSR envelope;
+
 double MakeNoise(double dTime)
 {	
-    double dOutput = osc(dFrequencyOutput, dTime, 3);
+    double dOutput = envelope.GetAmplitude(dTime) *
+    (
+        + osc(dFrequencyOutput * 0.5, dTime, 3)
+        + osc(dFrequencyOutput * 1.0, dTime, 1)
+    );
     
 //    double dOutput = 1.0 * (sin(dFrequencyOutput * 2.0 * M_PI * dTime) + sin((dFrequencyOutput + 20.0) * 2.0 * M_PI * dTime));
     
@@ -277,6 +361,7 @@ int main(int argc, char** argv)
                     if (nCurrentKey != k)
                     {					
                         dFrequencyOutput = dOctaveBaseFrequency * pow(d12thRootOf2, k);
+                        envelope.NoteOn(sound.GetTime());
                         mvprintw(2, 15, "\rNote On : %fs %fHz", sound.GetTime(), dFrequencyOutput);
                         wrefresh(w);				
                         nCurrentKey = k;
@@ -293,11 +378,12 @@ int main(int argc, char** argv)
                 {
                     mvprintw(2, 15,"\rNote Off: %fs                   ", sound.GetTime());
                     wrefresh(w);
+                    envelope.NoteOff(sound.GetTime());
                     nCurrentKey = -1;
                 }
 
-                dFrequencyOutput = 0.0;
-                sound.SetNote(0.0); // turn note off
+                //dFrequencyOutput = 0.0;
+                //sound.SetNote(0.0); // turn note off
             }
 
             draw(2, 8,  "|   |   |   |   |   | |   |   |   |   | |   | |   |   |   |  ");

@@ -80,6 +80,7 @@ public:
     
     int MainThread(float * efxoutl, float * efxoutr)
     {
+        m_dGlobalTime = 0.0;
 #if 1
         double dTimeStep = (1.0 / (double)m_nSampleRate);
         
@@ -98,6 +99,8 @@ public:
             
             efxoutl[n] = nNewSample;
             efxoutr[n] = nNewSample;
+            
+            m_dGlobalTime = m_dGlobalTime + dTimeStep;
         }
         
 #endif // 0
