@@ -18,9 +18,43 @@
 
 namespace synth
 {
-    double w (double dHertz);
+    ////////////////////////////////////
+    // Utilities
 
-    double osc(double dHertz, double dTime, int nType);
+    // Converts frequency (Hz) to angular velocity
+    double w (double dHertz);
+    
+    // A basic note
+    struct note
+    {
+        int id;     // Position in scale
+        double on;  // Time note was activated
+        double off; // Time note was deactivated
+        bool active;
+        int channel;
+        
+        note()
+        {
+            id = 0;
+            on = 0.0;
+            off = 0.0;
+            active = false;
+            channel = 0;
+        }
+    };
+    
+    ////////////////////////////////////
+    // Multi-Function Oscillator
+    const int OSC_SINE = 0;
+    const int OSC_SQUARE = 1;
+    const int OSC_TRIANGLE = 2;
+    const int OSC_SAW_ANA = 3;
+    const int OSC_SAW_DIG = 4;
+    const int OSC_NOISE = 5;
+    
+
+    double osc(const double dTime, const double dHertz, const int nType = OSC_SINE,
+            const double dLFOHertz = 5.0, const double dLFOAmplitude = 0.1, double dCustom = 50.0);
 
     struct sEnvelopeADSR
     {

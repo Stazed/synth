@@ -13,36 +13,38 @@ namespace synth
         return dHertz * 2.0 * M_PI;
     }
     
-    double osc(double dHertz, double dTime, int nType)
+    double osc(const double dTime, const double dHertz, const int nType,
+            const double dLFOHertz, const double dLFOAmplitude, double dCustom)
     {
+        double dFreq = w(dHertz) * dTime + dLFOAmplitude * dHertz * (sin(w(dLFOHertz) * dTime));
+        
         switch(nType)
         {
+        case OSC_SINE: // sine wave between -1 and +1
+            return sin(dFreq);
 
-        case 0: // sine wave
-            return sin(w(dHertz) * dTime);
+        case OSC_SQUARE: // square wave between -1 and +1
+            return sin(dFreq) > 0.0 ? 1.0 : -1.0;
 
-        case 1: // square wave
-            return sin(w(dHertz) * dTime) > 0.0 ? 1.0 : -1.0;
+        case OSC_TRIANGLE: // triangle wave between -1 and +1
+            return asin(sin(dFreq)) * (2.0 * M_PI);
 
-        case 2: // triangle wave
-            return asin(sin(w(dHertz) * dTime)) * 2.0 * M_PI;
-
-        case 3: // saw wave (analog / warm / slow)
+        case OSC_SAW_ANA: // saw wave (analog / warm / slow)
         {
             double dOutput = 0.0;
 
-            for(double n = 1.0; n < 100.0; n++)
+            for(double n = 1.0; n < dCustom; n++)
             {
-                dOutput += (sin(n * w(dHertz) * dTime)) / n;
+                dOutput += (sin(n * dFreq)) / n;
             }
 
             return dOutput * (2.0 / M_PI); 
         }
 
-        case 4: // saw wave (optimized / harsh / fast)
+        case OSC_SAW_DIG: // saw wave (optimized / harsh / fast)
             return (2.0 * M_PI) * (dHertz * M_PI * fmod(dTime, 1.0 / dHertz) - (M_PI / 2.0));
 
-        case 5: // pseudo random noise
+        case OSC_NOISE: // pseudo random noise
             return 2.0 * ((double)rand() / (double)RAND_MAX) - 1.0;
 
         default:
