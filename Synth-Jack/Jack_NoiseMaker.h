@@ -169,12 +169,12 @@ public:
             if (m_userFunction == nullptr)
                 nNewSample = UserProcess(m_dGlobalTime);
             else
-                nNewSample = m_userFunction(m_dGlobalTime);
+                nNewSample = m_userFunction(m_dGlobalTime); // function MakeNoise()
             
             efxoutl[n] = nNewSample;
             efxoutr[n] = nNewSample;
             
-            m_dGlobalTime = m_dGlobalTime + m_dTimeStep;
+            m_dGlobalTime = m_dGlobalTime + m_dTimeStep;    // running wall time
         }
           
         return 0; // not used
@@ -185,17 +185,17 @@ public:
         if( ((*(midievent->buffer) & 0xf0)) == 0x90 )
         {
             /* note on */
-            m_note = *(midievent->buffer + 1);
-            *m_dFrequency = m_note_hrz[m_note];
-            m_structEnvelope->NoteOn(GetTime());
+            m_note = *(midievent->buffer + 1);          // get the MIDI note
+            *m_dFrequency = m_note_hrz[m_note];         // set the synth frequency
+            m_structEnvelope->NoteOn(m_dGlobalTime);    // set the time of note on
             //printf("Note ON = %f\n", *m_dFrequency);
         }
 
         else if( ((*(midievent->buffer)) & 0xf0) == 0x80 )
         {
             /* note off */
-            m_note = *(midievent->buffer + 1);
-            m_structEnvelope->NoteOff(GetTime());
+            m_note = *(midievent->buffer + 1);          // get MIDI note off - not used yet
+            m_structEnvelope->NoteOff(m_dGlobalTime);   // set note off time
             //printf("Note OFF\n");
         }
         return 0; // not used
@@ -224,12 +224,14 @@ private:
     /* MIDI processing */
     unsigned char m_note = 0;
      
-    jack_default_audio_sample_t m_note_hrz[128];
+    jack_default_audio_sample_t m_note_hrz[128];    // note array
     
+    /* MIDI to frequency (Hz) array */
     void calc_note_frqs()
     {
         for(int i=0; i<128; i++)
         {
+            // this converts a MIDI note to audio frequency (Hz)
             m_note_hrz[i] = (440.0 / 32.0) * pow(2, (((jack_default_audio_sample_t)i - 9.0) / 12.0));
         }
     }
