@@ -152,7 +152,6 @@ public:
     
     int MainThread(float * efxoutl, float * efxoutr)
     {
-#if 1
         // Wall Time step per second
         double dTimeStep = (1.0 / (double)m_nSampleRate);
         
@@ -171,24 +170,7 @@ public:
             
             m_dGlobalTime = m_dGlobalTime + dTimeStep;
         }
-        
-#endif // 0
-            
-#ifdef JACK_MIDI_SINE
-        jack_default_audio_sample_t calculate_note = 0.0;
-        
-        for (unsigned i = 0; i < m_nBlockSamples; i++)
-        { 
-            //printf("MainThread\n");
-            m_ramp += m_note_frqs[m_note];
-            m_ramp = (m_ramp > 1.0) ? m_ramp - 2.0 : m_ramp;
-
-            calculate_note = m_note_on*sin(2*M_PI*m_ramp);
-            
-            efxoutl[i] = calculate_note;
-            efxoutr[i] = calculate_note;
-        }
-#endif // JACK_MIDI_SINE
+          
         return 0; // not used
     }
     
@@ -200,9 +182,6 @@ public:
             m_note = *(midievent->buffer + 1);
             *m_dFrequency = m_note_hrz[m_note];
             m_structEnvelope->NoteOn(GetTime());
-#ifdef JACK_MIDI_SINE
-            m_note_on = 1.0;
-#endif
             //printf("Note ON = %f\n", *m_dFrequency);
         }
 
@@ -211,9 +190,6 @@ public:
             /* note off */
             m_note = *(midievent->buffer + 1);
             m_structEnvelope->NoteOff(GetTime());
-#ifdef JACK_MIDI_SINE
-            m_note_on = 0.0;
-#endif
             //printf("Note OFF\n");
         }
         return 0; // not used
@@ -240,24 +216,13 @@ private:
     
     /* MIDI processing */
     unsigned char m_note = 0;
-    
-#ifdef JACK_MIDI_SINE
-    jack_default_audio_sample_t m_note_on = 0.0;
-    jack_default_audio_sample_t m_ramp=0.0;
-    jack_default_audio_sample_t m_note_frqs[128];
-#endif // #ifdef JACK_MIDI_SINE
-    
+     
     jack_default_audio_sample_t m_note_hrz[128];
     
     void calc_note_frqs(jack_default_audio_sample_t srate)
     {
-        int i;
-
-        for(i=0; i<128; i++)
+        for(int i=0; i<128; i++)
         {
-#ifdef JACK_MIDI_SINE
-            m_note_frqs[i] = (2.0 * 440.0 / 32.0) * pow(2, (((jack_default_audio_sample_t)i - 9.0) / 12.0)) / srate;
-#endif
             m_note_hrz[i] = (440.0 / 32.0) * pow(2, (((jack_default_audio_sample_t)i - 9.0) / 12.0));
         }
     }

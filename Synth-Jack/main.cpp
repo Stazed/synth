@@ -237,8 +237,6 @@ int main(int argc, char** argv)
     stop_input(input);
     free(all_keys);
 
-    // Little hack: read all the characters that was produced on stdin so they won't appear in commamd prompt
-    while (getch() != ERR);
     endwin();
 
     JACKfinish ();

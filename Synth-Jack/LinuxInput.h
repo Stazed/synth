@@ -41,7 +41,7 @@ FILE* start_input()
 // Retrieve all keys
 void read_keys(FILE* input, char* key_map)
 {
-    memset(key_map, 0, KEY_MAX/8 + 1);    //  Initate the array to zero's
+    memset(key_map, 0, KEY_MAX/8 + 1);    //  Initiate the array to zero's
     ioctl(fileno(input), EVIOCGKEY(KEY_MAX/8 + 1), key_map);
 }
 
@@ -57,7 +57,7 @@ char* get_all_keys(FILE* input)
 // Retrieve specific key
 int check_key_state(char* key_map, int key)
 {
-    int keyb = key_map[key/8];  //  The key we want (and the seven others arround it)
+    int keyb = key_map[key/8];  //  The key we want (and the seven others around it)
     int mask = 1 << (key % 8);  //  Put a one in the same column as out key state will be in;
 
     return (keyb & mask) != 0;  //  Returns true if pressed otherwise false
