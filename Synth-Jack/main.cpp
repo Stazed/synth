@@ -36,48 +36,6 @@ static void signal_handler(int sig)
     exit(0);
 }
 
-double w (double dHertz)
-{
-    return dHertz * 2.0 * M_PI;
-}
-
-double osc(double dHertz, double dTime, int nType)
-{
-    switch(nType)
-    {
-        
-    case 0: // sine wave
-        return sin(w(dHertz) * dTime);
-        
-    case 1: // square wave
-        return sin(w(dHertz) * dTime) > 0.0 ? 1.0 : -1.0;
-        
-    case 2: // triangle wave
-        return asin(sin(w(dHertz) * dTime)) * 2.0 * M_PI;
-        
-    case 3: // saw wave (analog / warm / slow)
-    {
-        double dOutput = 0.0;
-        
-        for(double n = 1.0; n < 100.0; n++)
-        {
-            dOutput += (sin(n * w(dHertz) * dTime)) / n;
-        }
-        
-        return dOutput * (2.0 / M_PI); 
-    }
-    
-    case 4: // saw wave (optimized / harsh / fast)
-        return (2.0 * M_PI) * (dHertz * M_PI * fmod(dTime, 1.0 / dHertz) - (M_PI / 2.0));
-        
-    case 5: // pseudo random noise
-        return 2.0 * ((double)rand() / (double)RAND_MAX) - 1.0;
-        
-    default:
-        return 0.0;
-    }
-}
-
 double dFrequencyOutput = 0.0;
 double dOctaveBaseFrequency = 110.0; // A2		// frequency of octave represented by keyboard
 double d12thRootOf2 = pow(2.0, 1.0 / 12.0);		// assuming western 12 notes per ocatve
@@ -87,8 +45,8 @@ double MakeNoise(double dTime)
 {	
     double dOutput = envelope.GetAmplitude(dTime) *
     (
-        + osc(dFrequencyOutput * 0.5, dTime, 3)
-        + osc(dFrequencyOutput * 1.0, dTime, 1)
+        + synth::osc(dFrequencyOutput * 0.5, dTime, 3)
+        + synth::osc(dFrequencyOutput * 1.0, dTime, 1)
     );
     
     return dOutput * 0.4;   // master volume

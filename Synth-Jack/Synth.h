@@ -14,8 +14,13 @@
 #ifndef SYNTH_H
 #define SYNTH_H
 
+#include <math.h>
+
 namespace synth
 {
+    double w (double dHertz);
+
+    double osc(double dHertz, double dTime, int nType);
 
     struct sEnvelopeADSR
     {
@@ -94,7 +99,7 @@ namespace synth
         }
     };
 
-}
+}   // namespace synth
 
 #endif /* SYNTH_H */
 
