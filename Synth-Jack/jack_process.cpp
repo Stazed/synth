@@ -105,7 +105,7 @@ int jackprocess (jack_nframes_t nframes, void *arg)
     
     synth->MainThread(outl, outr);
 
-#if 0
+#ifdef JACK_MIDI_SINE
     if(event_count > 1)
     {
         printf(" midisine: have %d events\n", event_count);
@@ -165,7 +165,7 @@ int jackprocess (jack_nframes_t nframes, void *arg)
             sizeof (jack_default_audio_sample_t) * nframes);
     memcpy (outr, JackOUT->efxoutr,
             sizeof (jack_default_audio_sample_t) * nframes);
-#endif // 0
+#endif // JACK_MIDI_SINE
     
     return 0;
 };
@@ -180,10 +180,7 @@ void JACKfinish ()
 void jackshutdown (void *arg)
 {
     NoiseMaker *synth = (NoiseMaker *) arg;
-#if 0
-    if (gui == 0)
-        printf ("Jack Shut Down, sorry.\n");
-    else
-        JackOUT->jshut=1;
-#endif // 0
+    
+    synth->jackshutdown(0);
+
 };

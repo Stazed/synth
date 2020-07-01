@@ -24,9 +24,6 @@
 
 using namespace std;
 
-/* Switch between MIDI and PC note control */
-bool MIDI_ON = false;
-
 extern jack_client_t *jackclient;
 jack_status_t status;
 char jackcliname[64];
@@ -176,63 +173,62 @@ int main(int argc, char** argv)
     
     while(1)
     {
-        if(!MIDI_ON)
+        bKeyPressed = false;
+        read_keys(input, all_keys);
+        for (int k = 0; k < 16; k++)
         {
-            bKeyPressed = false;
-            read_keys(input, all_keys);
-            for (int k = 0; k < 16; k++)
+            int nKeyState = check_key_state(all_keys, keys[k]);
+
+            if(nKeyState)
             {
-                int nKeyState = check_key_state(all_keys, keys[k]);
-
-                if(nKeyState)
-                {
-                    if (nCurrentKey != k)
-                    {					
-                        dFrequencyOutput = dOctaveBaseFrequency * pow(d12thRootOf2, k);
-                        envelope.NoteOn(sound.GetTime());
-                        mvprintw(2, 15, "\rNote On : %fs %fHz", sound.GetTime(), dFrequencyOutput);
-                        wrefresh(w);				
-                        nCurrentKey = k;
-                    }
-
-                    bKeyPressed = true;
-                    sound.SetNote(1.0); // turn note on
-                }
-            }
-
-            if (!bKeyPressed)
-            {	
-                if (nCurrentKey != -1)
-                {
-                    mvprintw(2, 15,"\rNote Off: %fs                   ", sound.GetTime());
-                    wrefresh(w);
-                    envelope.NoteOff(sound.GetTime());
-                    nCurrentKey = -1;
+                if (nCurrentKey != k)
+                {					
+                    dFrequencyOutput = dOctaveBaseFrequency * pow(d12thRootOf2, k);
+                    envelope.NoteOn(sound.GetTime());
+                    mvprintw(2, 15, "\rNote On : %fs %fHz", sound.GetTime(), dFrequencyOutput);
+                    wrefresh(w);				
+                    nCurrentKey = k;
                 }
 
-                //dFrequencyOutput = 0.0;
-                //sound.SetNote(0.0); // turn note off
+                bKeyPressed = true;
             }
-
-            draw(2, 8,  "|   |   |   |   |   | |   |   |   |   | |   | |   |   |   |  ");
-            draw(2, 9,  "|   | S |   |   | F | | G |   |   | J | | K | | L |   |   |  ");
-            draw(2, 10, "|   |___|   |   |___| |___|   |   |___| |___| |___|   |   |__");
-            draw(2, 11, "|     |     |     |     |     |     |     |     |     |     |");
-            draw(2, 12, "|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |");
-            draw(2, 13, "|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|");
-
-            wrefresh(w);
-            // /VISUAL
         }
+
+        if (!bKeyPressed)
+        {	
+            if (nCurrentKey != -1)
+            {
+                mvprintw(2, 15,"\rNote Off: %fs                   ", sound.GetTime());
+                wrefresh(w);
+                envelope.NoteOff(sound.GetTime());
+                nCurrentKey = -1;
+            }
+        }
+
+        draw(2, 8,  "|   |   |   |   |   | |   |   |   |   | |   | |   |   |   |  ");
+        draw(2, 9,  "|   | S |   |   | F | | G |   |   | J | | K | | L |   |   |  ");
+        draw(2, 10, "|   |___|   |   |___| |___|   |   |___| |___| |___|   |   |__");
+        draw(2, 11, "|     |     |     |     |     |     |     |     |     |     |");
+        draw(2, 12, "|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |");
+        draw(2, 13, "|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|");
+
+        draw(2, 6, "Press Q to quit...");
+
+        wrefresh(w);
+        // /VISUAL
+        
         if (get_key_state(input, KEY_Q))
             break;
         
         sleep(.1);
     }
+    
+    stop_input(input);
+    free(all_keys);
 
-
-//    J_SAMPLE_RATE = jack_get_sample_rate (jackclient);
-//    J_PERIOD = jack_get_buffer_size (jackclient);
+    // Little hack: read all the characters that was produced on stdin so they won't appear in commamd prompt
+    while (getch() != ERR);
+    endwin();
 
     JACKfinish ();
     

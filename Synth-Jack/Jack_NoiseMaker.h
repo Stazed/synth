@@ -108,7 +108,6 @@ class NoiseMaker
 public:
     NoiseMaker(double sample_rate, uint32_t buffer_size)
     {
-        //printf("sample_rate = %lf: bufsize = %d\n", sample_rate, buffer_size);
         m_nSampleRate = sample_rate;
         m_nBlockSamples =  buffer_size;
         calc_note_frqs(sample_rate);
@@ -123,11 +122,6 @@ public:
     bool Destroy()
     {
         return false;
-    }
-    
-    void Stop()
-    {
-        m_bReady = false;
     }
     
     // Override to process current sample
@@ -150,12 +144,7 @@ public:
     {
         m_structEnvelope = &env;
     }
-    
-    void SetNote(float note)
-    {
-        m_note_on = note;
-    }
-    
+
     double GetTime()
     {
         return m_dGlobalTime;
@@ -185,7 +174,7 @@ public:
         
 #endif // 0
             
-#if 0
+#ifdef JACK_MIDI_SINE
         jack_default_audio_sample_t calculate_note = 0.0;
         
         for (unsigned i = 0; i < m_nBlockSamples; i++)
@@ -199,20 +188,20 @@ public:
             efxoutl[i] = calculate_note;
             efxoutr[i] = calculate_note;
         }
-#endif // 0
+#endif // JACK_MIDI_SINE
     }
     
     int ProcessMidi(jack_midi_event_t *midievent)
     {
-        //printf("ProcessMidi\n");
-
         if( ((*(midievent->buffer) & 0xf0)) == 0x90 )
         {
             /* note on */
             m_note = *(midievent->buffer + 1);
             *m_dFrequency = m_note_hrz[m_note];
             m_structEnvelope->NoteOn(GetTime());
-            //m_note_on = 1.0;
+#ifdef JACK_MIDI_SINE
+            m_note_on = 1.0;
+#endif
             //printf("Note ON = %f\n", *m_dFrequency);
         }
 
@@ -221,7 +210,9 @@ public:
             /* note off */
             m_note = *(midievent->buffer + 1);
             m_structEnvelope->NoteOff(GetTime());
-            //m_note_on = 0.0;
+#ifdef JACK_MIDI_SINE
+            m_note_on = 0.0;
+#endif
             //printf("Note OFF\n");
         }
     }
@@ -243,19 +234,16 @@ private:
     uint32_t m_nBlockSamples;
     unsigned int m_nBlockCurrent;
     
-    atomic<bool> m_bReady;
-    
     atomic<double> m_dGlobalTime;
     
     /* MIDI processing */
     unsigned char m_note = 0;
+    
+#ifdef JACK_MIDI_SINE
     jack_default_audio_sample_t m_note_on = 0.0;
-    
-    
     jack_default_audio_sample_t m_ramp=0.0;
     jack_default_audio_sample_t m_note_frqs[128];
-    
-    jack_default_audio_sample_t m_ramp_time=0.0;
+#endif // #ifdef JACK_MIDI_SINE
     
     jack_default_audio_sample_t m_note_hrz[128];
     
@@ -265,27 +253,11 @@ private:
 
         for(i=0; i<128; i++)
         {
+#ifdef JACK_MIDI_SINE
             m_note_frqs[i] = (2.0 * 440.0 / 32.0) * pow(2, (((jack_default_audio_sample_t)i - 9.0) / 12.0)) / srate;
-            
+#endif
             m_note_hrz[i] = (440.0 / 32.0) * pow(2, (((jack_default_audio_sample_t)i - 9.0) / 12.0));
         }
-
-        /* Debug */
-    #if 0
-        int note = 100;
-        jack_default_audio_sample_t calculate_note = 0.0;
-        jack_default_audio_sample_t a_ramp=0.0;
-
-        for (int ii = 0; ii < 20; ii++)
-        {
-            a_ramp += note_frqs[note];
-            a_ramp = (a_ramp > 1.0) ? a_ramp - 2.0 : a_ramp;
-
-            calculate_note = 1*sin(2*M_PI*a_ramp);
-
-            printf("out value = %f: note_freqs = %f: a_ramp = %f\n", calculate_note, note_frqs[note], a_ramp);
-        }
-    #endif // 0
     }
     
 };
