@@ -21,87 +21,10 @@
 #include <atomic>
 
 #include <jack/midiport.h>
+#include "Synth.h"
 
 
 using namespace std;
-
-struct sEnvelopeADSR
-{
-    double dAttackTime;
-    double dDecayTime;
-    double dReleaseTime;
-    
-    double dSustainAmplitude;
-    double dStartAmplitude;
-    
-    double dTriggerOnTime;
-    double dTriggerOffTime;
-    
-    bool bNoteOn;
-    
-    sEnvelopeADSR()
-    {
-        dAttackTime = 0.100;
-        dDecayTime = 0.01;
-        dStartAmplitude = 1.0;
-        dSustainAmplitude = 0.8;
-        dReleaseTime = 0.200;
-        dTriggerOnTime = 0.0;
-        dTriggerOffTime = 0.0;
-        bNoteOn = false;
-    }
-    
-    double GetAmplitude(double dTime) // dTime = wall time
-    {
-        double dAmplitude = 0.0;
-        
-        double dLifeTime = dTime - dTriggerOnTime;
-        
-        if (bNoteOn)
-        {
-            // ADS
-            
-            // Attack
-            if(dLifeTime <= dAttackTime)
-                dAmplitude = (dLifeTime / dAttackTime) * dStartAmplitude;
-            
-            // Decay
-            if(dLifeTime > dAttackTime && dLifeTime <= (dAttackTime + dDecayTime))
-                dAmplitude = ((dLifeTime - dAttackTime) / dDecayTime) * (dSustainAmplitude - dStartAmplitude) + dStartAmplitude;
-            
-            // Sustain
-            if(dLifeTime > (dAttackTime + dDecayTime))
-            {
-                dAmplitude = dSustainAmplitude;
-            }
-        }
-        else
-        {
-            // Release
-            dAmplitude = ((dTime - dTriggerOffTime) / dReleaseTime) * (0.0 - dSustainAmplitude) + dSustainAmplitude;
-        }
-        
-        if (dAmplitude <= 0.0001)
-        {
-            dAmplitude = 0.0;
-        }
-        
-        return dAmplitude;
-    }
-    
-    void NoteOn(double dTimeOn)
-    {
-        dTriggerOnTime = dTimeOn;
-        bNoteOn = true;
-    }
-    
-    void NoteOff(double dTimeOff)
-    {
-        dTriggerOffTime = dTimeOff;
-        bNoteOn = false;
-    }
-};
-
 
 class NoiseMaker
 {
@@ -141,7 +64,7 @@ public:
         m_dFrequency = &freq;
     }
     
-    void SetEnvelope(sEnvelopeADSR & env)
+    void SetEnvelope(synth::sEnvelopeADSR & env)
     {
         m_structEnvelope = &env;
     }
@@ -210,7 +133,7 @@ private:
     
     double (*m_userFunction)(double);
     double *m_dFrequency;
-    sEnvelopeADSR *m_structEnvelope;
+    synth::sEnvelopeADSR *m_structEnvelope;
     
     jack_nframes_t m_nSampleRate;
     unsigned int m_nChannels;

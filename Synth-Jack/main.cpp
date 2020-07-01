@@ -21,6 +21,7 @@
 #include "jack_process.h"
 #include "Jack_NoiseMaker.h"
 #include "LinuxInput.h"     // https://github.com/Barracuda72/synth.git
+#include "Synth.h"
 
 using namespace std;
 
@@ -80,7 +81,7 @@ double osc(double dHertz, double dTime, int nType)
 double dFrequencyOutput = 0.0;
 double dOctaveBaseFrequency = 110.0; // A2		// frequency of octave represented by keyboard
 double d12thRootOf2 = pow(2.0, 1.0 / 12.0);		// assuming western 12 notes per ocatve
-sEnvelopeADSR envelope;
+synth::sEnvelopeADSR envelope;
 
 double MakeNoise(double dTime)
 {	
