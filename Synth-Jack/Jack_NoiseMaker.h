@@ -110,7 +110,8 @@ public:
     {
         m_nSampleRate = sample_rate;
         m_nBlockSamples =  buffer_size;
-        calc_note_frqs(sample_rate);
+        calc_note_frqs();
+        SetTimeStep(sample_rate);
         m_dGlobalTime = 0.0;
     }
 
@@ -150,11 +151,16 @@ public:
         return m_dGlobalTime;
     }
     
+    void SetTimeStep(jack_nframes_t nSampleRate)
+    {
+        m_nSampleRate = nSampleRate;
+        
+        // Wall Time step per second
+        m_dTimeStep = (1.0 / (double)m_nSampleRate);
+    }
+    
     int MainThread(float * efxoutl, float * efxoutr)
     {
-        // Wall Time step per second
-        double dTimeStep = (1.0 / (double)m_nSampleRate);
-        
         float nNewSample = 0.0;
 
         for (unsigned int n = 0; n < m_nBlockSamples; n++)
@@ -168,7 +174,7 @@ public:
             efxoutl[n] = nNewSample;
             efxoutr[n] = nNewSample;
             
-            m_dGlobalTime = m_dGlobalTime + dTimeStep;
+            m_dGlobalTime = m_dGlobalTime + m_dTimeStep;
         }
           
         return 0; // not used
@@ -206,20 +212,21 @@ private:
     double *m_dFrequency;
     sEnvelopeADSR *m_structEnvelope;
     
-    uint32_t m_nSampleRate;
+    jack_nframes_t m_nSampleRate;
     unsigned int m_nChannels;
     unsigned int m_nBlockCount;
-    uint32_t m_nBlockSamples;
+    jack_nframes_t m_nBlockSamples;
     unsigned int m_nBlockCurrent;
     
     atomic<double> m_dGlobalTime;
+    double m_dTimeStep;
     
     /* MIDI processing */
     unsigned char m_note = 0;
      
     jack_default_audio_sample_t m_note_hrz[128];
     
-    void calc_note_frqs(jack_default_audio_sample_t srate)
+    void calc_note_frqs()
     {
         for(int i=0; i<128; i++)
         {

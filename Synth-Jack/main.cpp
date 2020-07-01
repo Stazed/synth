@@ -96,7 +96,11 @@ double MakeNoise(double dTime)
 int srate(jack_nframes_t nframes, void *arg)
 {
     printf("the sample rate is now %" PRIu32 "/sec\n", nframes);
-//    calc_note_frqs((jack_default_audio_sample_t)nframes);
+    
+    NoiseMaker *sound = (NoiseMaker *) arg;
+    
+    sound->SetTimeStep(nframes);
+
     return 0;
 }
 
@@ -129,7 +133,7 @@ int main(int argc, char** argv)
     sound.SetFreqVariable(dFrequencyOutput);
     sound.SetEnvelope(envelope);
     
-    jack_set_sample_rate_callback (jackclient, srate, 0);
+    jack_set_sample_rate_callback (jackclient, srate, &sound);
     
     JACKstart(jackclient, &sound);
 
