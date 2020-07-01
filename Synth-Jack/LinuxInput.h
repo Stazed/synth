@@ -23,6 +23,8 @@
 // Linux async input routines
 // To use this, your user must be in "input" group:
 // sudo usermod -aG input <username>
+// In addition, different systems may have different symlinks for start_input()
+// Manjaro (Arch) "/dev/input/by-path/pci-0000:00:1d.0-usb-0:1.7:1.0-event-kbd"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +34,7 @@
 // Start key input poll
 FILE* start_input()
 {
+    // see note above for symlink and input user group
     return fopen("/dev/input/by-path/platform-i8042-serio-0-event-kbd", "rb");
 }
 

@@ -189,6 +189,7 @@ public:
             efxoutr[i] = calculate_note;
         }
 #endif // JACK_MIDI_SINE
+        return 0; // not used
     }
     
     int ProcessMidi(jack_midi_event_t *midievent)
@@ -215,6 +216,7 @@ public:
 #endif
             //printf("Note OFF\n");
         }
+        return 0; // not used
     }
     
     void jackshutdown (void *arg)

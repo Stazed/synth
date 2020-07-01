@@ -164,6 +164,17 @@ int main(int argc, char** argv)
     };
     
     FILE* input = start_input();
+    
+    if(input == nullptr)
+    {
+        mvprintw(2, 2, "NULL input file - check if user is in 'input' group");
+        mvprintw(3, 2, "Also check for correct symlink in LinuxInput.h start_input()");
+        wrefresh(w);
+        endwin();
+        JACKfinish ();
+        return 0;
+    }
+    
     char* all_keys = get_all_keys(input);
     
     // Sit in loop, capturing keyboard state changes and modify
