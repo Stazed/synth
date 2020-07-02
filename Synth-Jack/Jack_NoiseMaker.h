@@ -99,8 +99,10 @@ public:
             
             m_dGlobalTime = m_dGlobalTime + m_dTimeStep;    // running wall time
         }
-          
-        return 0; // not used
+
+        // return 0 if successful; otherwise jack_finish() will be called and
+        // the client terminated immediately.
+        return 0; // Continue
     }
     
     int ProcessMidi(jack_midi_event_t *midievent)
@@ -121,7 +123,10 @@ public:
             m_structEnvelope->NoteOff(m_dGlobalTime);   // set note off time
             //printf("Note OFF\n");
         }
-        return 0; // not used
+        
+        // return 0 if successful; otherwise jack_finish() will be called and
+        // the client terminated immediately.
+        return 0; // Continue
     }
     
     void jackshutdown (void *arg)
