@@ -201,7 +201,7 @@ int main(int argc, char** argv)
                     n.id = k;
                     n.on = dTimeNow;
                     //n.channel = voice;
-                    n.channel = 2;
+                    n.channel = 1;
                     n.active = true;
 
                     vecNotes.emplace_back(n);
@@ -240,7 +240,10 @@ int main(int argc, char** argv)
         draw(2, 12, "|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |");
         draw(2, 13, "|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|");
 
-        draw(2, 6, "Press Q to quit...");
+        mvprintw(15, 2, "Notes %d", vecNotes.size());
+
+        draw(2, 17, "Press Q to quit...");
+        
 
         wrefresh(w);
         // /VISUAL
@@ -248,7 +251,7 @@ int main(int argc, char** argv)
         if (get_key_state(input, KEY_Q))
             break;
         
-        sleep(.1);
+        sleep(.01);
     }
     
     stop_input(input);

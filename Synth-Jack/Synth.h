@@ -54,7 +54,7 @@ namespace synth
     
 
     double osc(const double dTime, const double dHertz, const int nType = OSC_SINE,
-            const double dLFOHertz = 5.0, const double dLFOAmplitude = 0.1, double dCustom = 50.0);
+            const double dLFOHertz = 0.0, const double dLFOAmplitude = 0.1, double dCustom = 50.0);
 
     ////////////////////////////////////
     // scale to frequency conversion
