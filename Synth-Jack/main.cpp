@@ -41,15 +41,48 @@ double dOctaveBaseFrequency = 110.0; // A2		// frequency of octave represented b
 double d12thRootOf2 = pow(2.0, 1.0 / 12.0);		// assuming western 12 notes per ocatve
 synth::sEnvelopeADSR envelope;
 
-double MakeNoise(double dTime)
+vector<synth::note> vecNotes;
+mutex muxNotes;
+synth::instrument_bell instBell;
+synth::instrument_harmonica instHarm;
+
+typedef bool(*lambda)(synth::note const& item);
+template<class T>
+void safe_remove(T &v, lambda f)
+{
+    auto n = v.begin();
+    while (n != v.end())
+    {
+        if (!f(*n))
+            n = v.erase(n);
+        else
+            ++n;
+    }
+}
+
+double MakeNoise(int nChannel, double dTime)
 {	
-    double dOutput = envelope.GetAmplitude(dTime) *
-    (
-        + synth::osc(dFrequencyOutput * 0.5, dTime, 3)
-        + synth::osc(dFrequencyOutput * 1.0, dTime, 1)
-    );
+    unique_lock<mutex> lm(muxNotes);
+    double dMixedOutput = 0.0;
     
-    return dOutput * 0.4;   // master volume
+    for (auto &n : vecNotes)
+    {
+        bool bNoteFinished = false;
+        double dSound = 0;
+        if(n.channel == 2)
+            dSound = instBell.sound(dTime, n, bNoteFinished);
+        if(n.channel == 1)
+            dSound = instHarm.sound(dTime, n, bNoteFinished) * 0.5;
+        
+        dMixedOutput += dSound;
+        
+        if(bNoteFinished && n.off > n.on)
+            n.active = false;
+    }
+    
+    safe_remove<vector<synth::note>>(vecNotes, [](synth::note const& item) {return item.active; });
+    
+    return dMixedOutput * 0.2;   // master volume
 }
 
 int srate(jack_nframes_t nframes, void *arg)

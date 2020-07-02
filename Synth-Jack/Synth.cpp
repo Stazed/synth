@@ -51,4 +51,13 @@ namespace synth
             return 0.0;
         }
     }
+    
+    double scale(const int nNoteID, const int nScaleID)
+    {
+        switch (nScaleID)
+        {
+            case SCALE_DEFAULT: default:
+                return 256 * pow(1.0594630943592952645618252949463, nNoteID);
+        }
+    }
 }       // namespace synth

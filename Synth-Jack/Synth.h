@@ -56,41 +56,48 @@ namespace synth
     double osc(const double dTime, const double dHertz, const int nType = OSC_SINE,
             const double dLFOHertz = 5.0, const double dLFOAmplitude = 0.1, double dCustom = 50.0);
 
-    struct sEnvelopeADSR
+    ////////////////////////////////////
+    // scale to frequency conversion
+
+    const int SCALE_DEFAULT = 0;
+
+    double scale(const int nNoteID, const int nScaleID = SCALE_DEFAULT);
+
+
+    ////////////////////////////////////
+    // envelopes
+    
+    struct envelope
+    {
+        virtual double amplitude(const double dTime, const double dTimeOn, const double dTimeOff) = 0;
+    };
+
+    struct envelope_adsr : public envelope
     {
         double dAttackTime;
         double dDecayTime;
-        double dReleaseTime;
-
         double dSustainAmplitude;
+        double dReleaseTime;
         double dStartAmplitude;
 
-        double dTriggerOnTime;
-        double dTriggerOffTime;
-
-        bool bNoteOn;
-
-        sEnvelopeADSR()
+        envelope_adsr()
         {
-            dAttackTime = 0.100;
-            dDecayTime = 0.01;
+            dAttackTime = 0.1;
+            dDecayTime = 0.1;
+            dSustainAmplitude = 1.0;
+            dReleaseTime = 0.2;
             dStartAmplitude = 1.0;
-            dSustainAmplitude = 0.8;
-            dReleaseTime = 0.200;
-            dTriggerOnTime = 0.0;
-            dTriggerOffTime = 0.0;
-            bNoteOn = false;
         }
 
-        double GetAmplitude(double dTime) // dTime = wall time
+        virtual double amplitude(const double dTime, const double dTimeOn, const double dTimeOff) // dTime = wall time
         {
             double dAmplitude = 0.0;
 
-            double dLifeTime = dTime - dTriggerOnTime;
+            double dReleaseAmplitude = 0.0;
 
-            if (bNoteOn)
+            if (dTimeOn > dTimeOff) // note is on
             {
-                // ADS
+                double dLifeTime = dTime - dTimeOn;
 
                 // Attack
                 if(dLifeTime <= dAttackTime)
@@ -98,7 +105,8 @@ namespace synth
 
                 // Decay
                 if(dLifeTime > dAttackTime && dLifeTime <= (dAttackTime + dDecayTime))
-                    dAmplitude = ((dLifeTime - dAttackTime) / dDecayTime) * (dSustainAmplitude - dStartAmplitude) + dStartAmplitude;
+                    dAmplitude = ((dLifeTime - dAttackTime) / dDecayTime) * 
+                            (dSustainAmplitude - dStartAmplitude) + dStartAmplitude;
 
                 // Sustain
                 if(dLifeTime > (dAttackTime + dDecayTime))
@@ -106,33 +114,132 @@ namespace synth
                     dAmplitude = dSustainAmplitude;
                 }
             }
-            else
+            else    // note is off
             {
                 // Release
-                dAmplitude = ((dTime - dTriggerOffTime) / dReleaseTime) * (0.0 - dSustainAmplitude) + dSustainAmplitude;
+                
+                double dLifeTime = dTimeOff - dTimeOn;
+                
+                if (dLifeTime <= dAttackTime)
+                {
+                    dReleaseAmplitude = (dLifeTime / dAttackTime) * dStartAmplitude;
+                }
+                
+                if (dLifeTime > dAttackTime && dLifeTime <= (dAttackTime + dDecayTime))
+                {
+                    dReleaseAmplitude = ((dLifeTime - dAttackTime) / dDecayTime) *
+                            (dSustainAmplitude - dStartAmplitude) + dStartAmplitude;
+                }
+                
+                if (dLifeTime > (dAttackTime + dDecayTime))
+                    dReleaseAmplitude = dSustainAmplitude;
+                    
+                dAmplitude = ((dTime - dTimeOff) / dReleaseTime) * (0.0 - dReleaseAmplitude) + dReleaseAmplitude;
             }
 
-            if (dAmplitude <= 0.0001)
+            // amplitude should not be negative
+            if (dAmplitude <= 0.000)
             {
                 dAmplitude = 0.0;
             }
 
             return dAmplitude;
         }
-
-        void NoteOn(double dTimeOn)
+    };
+    
+    double env(const double dTime, envelope &env, const double dTimeOn, const double dTimeOff)
+    {
+        return env.amplitude(dTime, dTimeOn, dTimeOff);
+    }
+    
+    struct instrument_base
+    {
+        double dVolume;
+        synth::envelope_adsr env;
+        virtual double sound(const double dTime, synth::note n, bool &bNoteFinished) = 0;
+    };
+    
+    struct instrument_bell : public instrument_base
+    {
+        instrument_bell()
         {
-            dTriggerOnTime = dTimeOn;
-            bNoteOn = true;
+            env.dAttackTime = 0.01;
+            env.dDecayTime = 1.0;
+            env.dSustainAmplitude = 0.0;
+            env.dReleaseTime = 1.0;
+            
+            dVolume = 1.0;
         }
 
-        void NoteOff(double dTimeOff)
+        virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
         {
-            dTriggerOffTime = dTimeOff;
-            bNoteOn = false;
+            double dAmplitude = synth::env(dTime, env, n.on, n.off);
+            if (dAmplitude <= 0.0)
+                bNoteFinished = true;
+            
+            double dSound =
+                + 1.00 * synth::osc(n.on - dTime, synth::scale(n.id + 12), synth::OSC_SINE, 5.0, 0.001)
+                + 0.50 * synth::osc(n.on - dTime, synth::scale(n.id + 24))
+                + 0.25 * synth::osc(n.on - dTime, synth::scale(n.id + 36));
+            
+            return dAmplitude * dSound * dVolume;
+        }  
+    };
+    
+    struct instrument_bell8 : public instrument_base
+    {
+        instrument_bell8()
+        {
+            env.dAttackTime = 0.01;
+            env.dDecayTime = 0.5;
+            env.dSustainAmplitude = 0.8;
+            env.dReleaseTime = 1.0;
+
+            dVolume = 1.0;
+        }
+
+        virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
+        {
+            double dAmplitude = synth::env(dTime, env, n.on, n.off);
+            if (dAmplitude <= 0.0)
+                bNoteFinished = true;
+
+            double dSound =
+                +1.00 * synth::osc(n.on - dTime, synth::scale(n.id), synth::OSC_SQUARE, 5.0, 0.001)
+                + 0.50 * synth::osc(n.on - dTime, synth::scale(n.id + 12))
+                + 0.25 * synth::osc(n.on - dTime, synth::scale(n.id + 24));
+
+            return dAmplitude * dSound * dVolume;
         }
     };
 
+    struct instrument_harmonica : public instrument_base
+    {
+        instrument_harmonica()
+        {
+            env.dAttackTime = 0.05;
+            env.dDecayTime = 1.0;
+            env.dSustainAmplitude = 0.95;
+            env.dReleaseTime = 0.1;
+
+            dVolume = 1.0;
+        }
+
+        virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
+        {
+            double dAmplitude = synth::env(dTime, env, n.on, n.off);
+            if (dAmplitude <= 0.0)
+                bNoteFinished = true;
+
+            double dSound =
+                //+ 1.0  * synth::osc(n.on - dTime, synth::scale(n.id-12), synth::OSC_SAW_ANA, 5.0, 0.001, 100)
+                + 1.00 * synth::osc(n.on - dTime, synth::scale(n.id), synth::OSC_SQUARE, 5.0, 0.001)
+                + 0.50 * synth::osc(n.on - dTime, synth::scale(n.id + 12), synth::OSC_SQUARE)
+                + 0.05  * synth::osc(n.on - dTime, synth::scale(n.id + 24), synth::OSC_NOISE);
+
+            return dAmplitude * dSound * dVolume;
+        }
+    };
 }   // namespace synth
 
 #endif /* SYNTH_H */
