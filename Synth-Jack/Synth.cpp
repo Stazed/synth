@@ -60,4 +60,9 @@ namespace synth
                 return 256 * pow(1.0594630943592952645618252949463, nNoteID);
         }
     }
+    
+    double env(const double dTime, envelope &env, const double dTimeOn, const double dTimeOff)
+    {
+        return env.amplitude(dTime, dTimeOn, dTimeOff);
+    }
 }       // namespace synth

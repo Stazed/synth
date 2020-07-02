@@ -49,26 +49,16 @@ public:
     }
     
     // Override to process current sample
-    virtual double UserProcess(double dTime)
+    virtual double UserProcess(int nChannel, double dTime)
     {
         return 0.0;
     }
     
-    void SetUserFunction(double(*func)(double))
+    void SetUserFunction(double(*func)(int, double))
     {
         m_userFunction = func;
     }
     
-    void SetFreqVariable(double & freq)
-    {
-        m_dFrequency = &freq;
-    }
-    
-    void SetEnvelope(synth::sEnvelopeADSR & env)
-    {
-        m_structEnvelope = &env;
-    }
-
     double GetTime()
     {
         return m_dGlobalTime;
@@ -90,9 +80,9 @@ public:
         {
             // User Process
             if (m_userFunction == nullptr)
-                nNewSample = UserProcess(m_dGlobalTime);
+                nNewSample = UserProcess(1, m_dGlobalTime);
             else
-                nNewSample = m_userFunction(m_dGlobalTime); // function MakeNoise()
+                nNewSample = m_userFunction(1, m_dGlobalTime); // function MakeNoise()
             
             efxoutl[n] = nNewSample;
             efxoutr[n] = nNewSample;
@@ -110,7 +100,7 @@ public:
             /* note on */
             m_note = *(midievent->buffer + 1);          // get the MIDI note
             *m_dFrequency = m_note_hrz[m_note];         // set the synth frequency
-            m_structEnvelope->NoteOn(m_dGlobalTime);    // set the time of note on
+//            m_structEnvelope->NoteOn(m_dGlobalTime);    // set the time of note on
             //printf("Note ON = %f\n", *m_dFrequency);
         }
 
@@ -118,7 +108,7 @@ public:
         {
             /* note off */
             m_note = *(midievent->buffer + 1);          // get MIDI note off - not used yet
-            m_structEnvelope->NoteOff(m_dGlobalTime);   // set note off time
+//            m_structEnvelope->NoteOff(m_dGlobalTime);   // set note off time
             //printf("Note OFF\n");
         }
         return 0; // not used
@@ -131,9 +121,8 @@ public:
     
 private:
     
-    double (*m_userFunction)(double);
+    double (*m_userFunction)(int, double);
     double *m_dFrequency;
-    synth::sEnvelopeADSR *m_structEnvelope;
     
     jack_nframes_t m_nSampleRate;
     unsigned int m_nChannels;

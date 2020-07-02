@@ -16,6 +16,8 @@
 #include <unistd.h>     /* sleep() */
 #include <signal.h>
 #include <math.h>
+#include <mutex>
+#include <algorithm>
 #include <ncurses.h>
 
 #include "jack_process.h"
@@ -35,11 +37,6 @@ static void signal_handler(int sig)
     fprintf(stderr, "signal received, exiting ...\n");
     exit(0);
 }
-
-double dFrequencyOutput = 0.0;
-double dOctaveBaseFrequency = 110.0; // A2		// frequency of octave represented by keyboard
-double d12thRootOf2 = pow(2.0, 1.0 / 12.0);		// assuming western 12 notes per ocatve
-synth::sEnvelopeADSR envelope;
 
 vector<synth::note> vecNotes;
 mutex muxNotes;
@@ -122,8 +119,6 @@ int main(int argc, char** argv)
     
     // Link noise function with sound machine
     sound.SetUserFunction(MakeNoise);
-    sound.SetFreqVariable(dFrequencyOutput);
-    sound.SetEnvelope(envelope);
     
     jack_set_sample_rate_callback (jackclient, srate, &sound);
     
@@ -178,6 +173,10 @@ int main(int argc, char** argv)
     int nCurrentKey = -1;	
     bool bKeyPressed = false;
     
+    auto clock_old_time = chrono::high_resolution_clock::now();
+    auto clock_real_time = chrono::high_resolution_clock::now();
+    double dElaspedTime = 0.0;
+    
     while(1)
     {
         bKeyPressed = false;
@@ -185,31 +184,53 @@ int main(int argc, char** argv)
         for (int k = 0; k < 16; k++)
         {
             int nKeyState = check_key_state(all_keys, keys[k]);
+            
+            double dTimeNow = sound.GetTime();
+            
+            // Check if note already exists in currently playing notes
+            muxNotes.lock();
+            auto noteFound = find_if(vecNotes.begin(), vecNotes.end(), [&k](synth::note const& item)
+                { return item.id == k; });
 
-            if(nKeyState)
+            if(noteFound == vecNotes.end())
             {
-                if (nCurrentKey != k)
-                {					
-                    dFrequencyOutput = dOctaveBaseFrequency * pow(d12thRootOf2, k);
-                    envelope.NoteOn(sound.GetTime());
-                    mvprintw(2, 15, "\rNote On : %fs %fHz", sound.GetTime(), dFrequencyOutput);
-                    wrefresh(w);				
-                    nCurrentKey = k;
+                if(nKeyState)
+                {
+                    // Key pressed so create a new note
+                    synth::note n;
+                    n.id = k;
+                    n.on = dTimeNow;
+                    //n.channel = voice;
+                    n.channel = 2;
+                    n.active = true;
+
+                    vecNotes.emplace_back(n);
+                } else 
+                {
+                    // Note not in vector, but key hasn't been pressed
+                    // Nothing to do
                 }
-
-                bKeyPressed = true;
             }
-        }
-
-        if (!bKeyPressed)
-        {	
-            if (nCurrentKey != -1)
+            else
             {
-                mvprintw(2, 15,"\rNote Off: %fs                   ", sound.GetTime());
-                wrefresh(w);
-                envelope.NoteOff(sound.GetTime());
-                nCurrentKey = -1;
+                // Note exists in the vector
+                if (nKeyState)
+                {
+                    if (noteFound->off > noteFound->on)
+                    {
+                        noteFound->on = dTimeNow;
+                        noteFound->active = true;
+                    }
+                } else
+                {
+                    // key released, switch it off
+                    if (noteFound->off < noteFound->on)
+                    {
+                        noteFound->off = dTimeNow;
+                    }
+                }
             }
+            muxNotes.unlock();
         }
 
         draw(2, 8,  "|   |   |   |   |   | |   |   |   |   | |   | |   |   |   |  ");

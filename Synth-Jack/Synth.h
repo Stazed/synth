@@ -147,10 +147,7 @@ namespace synth
         }
     };
     
-    double env(const double dTime, envelope &env, const double dTimeOn, const double dTimeOff)
-    {
-        return env.amplitude(dTime, dTimeOn, dTimeOff);
-    }
+    double env(const double dTime, envelope &env, const double dTimeOn, const double dTimeOff);
     
     struct instrument_base
     {
