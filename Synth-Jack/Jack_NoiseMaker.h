@@ -59,6 +59,16 @@ public:
         m_userFunction = func;
     }
     
+    void SetMidiAddNote(void(*func)(jack_midi_event_t, double))
+    {
+        m_MidiAddNote = func;
+    }
+    
+    jack_default_audio_sample_t *GetNoteHz()
+    {
+        return m_NoteHz;
+    }
+    
     double GetTime()
     {
         return m_dGlobalTime;
@@ -100,17 +110,14 @@ public:
         if( ((*(midievent->buffer) & 0xf0)) == 0x90 )
         {
             /* note on */
-            m_note = *(midievent->buffer + 1);          // get the MIDI note
-            *m_dFrequency = m_note_hrz[m_note];         // set the synth frequency
-//            m_structEnvelope->NoteOn(m_dGlobalTime);    // set the time of note on
+            m_MidiAddNote(*midievent, m_dGlobalTime);
             //printf("Note ON = %f\n", *m_dFrequency);
         }
 
         else if( ((*(midievent->buffer)) & 0xf0) == 0x80 )
         {
             /* note off */
-            m_note = *(midievent->buffer + 1);          // get MIDI note off - not used yet
-//            m_structEnvelope->NoteOff(m_dGlobalTime);   // set note off time
+            m_MidiAddNote(*midievent, m_dGlobalTime);
             //printf("Note OFF\n");
         }
         
@@ -127,6 +134,7 @@ public:
 private:
     
     double (*m_userFunction)(int, double);
+    void (*m_MidiAddNote)(jack_midi_event_t, double);
     double *m_dFrequency;
     
     jack_nframes_t m_nSampleRate;
@@ -141,7 +149,7 @@ private:
     /* MIDI processing */
     unsigned char m_note = 0;
      
-    jack_default_audio_sample_t m_note_hrz[128];    // note array
+    jack_default_audio_sample_t m_NoteHz[128];    // note array
     
     /* MIDI to frequency (Hz) array */
     void calc_note_frqs()
@@ -149,7 +157,7 @@ private:
         for(int i=0; i<128; i++)
         {
             // this converts a MIDI note to audio frequency (Hz)
-            m_note_hrz[i] = (440.0 / 32.0) * pow(2, (((jack_default_audio_sample_t)i - 9.0) / 12.0));
+            m_NoteHz[i] = (440.0 / 32.0) * pow(2, (((jack_default_audio_sample_t)i - 9.0) / 12.0));
         }
     }
     

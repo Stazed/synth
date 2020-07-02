@@ -6,6 +6,8 @@
 
 #include "Synth.h"
 
+jack_default_audio_sample_t *note_hz;
+
 namespace synth
 {
     double w (double dHertz)
@@ -56,6 +58,9 @@ namespace synth
     {
         switch (nScaleID)
         {
+            case MIDI_NOTE:
+                return note_hz[nNoteID];
+            
             case SCALE_DEFAULT: default:
                 return 256 * pow(1.0594630943592952645618252949463, nNoteID);
         }

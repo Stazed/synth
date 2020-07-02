@@ -30,6 +30,9 @@ using namespace std;
 extern jack_client_t *jackclient;
 jack_status_t status;
 char jackcliname[64];
+int print_note = 0;
+
+extern jack_default_audio_sample_t *note_hz;    // note array
 
 static void signal_handler(int sig)
 {
@@ -82,6 +85,73 @@ double MakeNoise(int nChannel, double dTime)
     return dMixedOutput * 0.2;   // master volume
 }
 
+// For Jack MIDI
+void AddNotes(jack_midi_event_t midievent, double dTimeNow)
+{
+    int k = 0;
+    int nKeyState = 0;
+
+    if( ((*(midievent.buffer) & 0xf0)) == 0x90 )
+    {
+        /* note on */
+        k = *(midievent.buffer + 1);          // get the MIDI note
+        nKeyState = 1;
+        print_note = k;
+    }
+    else if( ((*(midievent.buffer)) & 0xf0) == 0x80 )
+    {
+        /* note off */
+        k = *(midievent.buffer + 1);
+        nKeyState = 0;
+        print_note = k;
+    }
+
+    // Check if note already exists in currently playing notes
+    muxNotes.lock();
+    auto noteFound = find_if(vecNotes.begin(), vecNotes.end(), [&k](synth::note const& item)
+        { return item.id == k; });
+
+    if(noteFound == vecNotes.end())
+    {
+        if(nKeyState)
+        {
+            // Key pressed so create a new note
+            synth::note n;
+            n.id = k;
+            n.on = dTimeNow;
+            //n.channel = voice;
+            n.channel = 1;
+            n.active = true;
+
+            vecNotes.emplace_back(n);
+        } else 
+        {
+            // Note not in vector, but key hasn't been pressed
+            // Nothing to do
+        }
+    }
+    else
+    {
+        // Note exists in the vector
+        if (nKeyState)
+        {
+            if (noteFound->off > noteFound->on)
+            {
+                noteFound->on = dTimeNow;
+                noteFound->active = true;
+            }
+        } else
+        {
+            // key released, switch it off
+            if (noteFound->off < noteFound->on)
+            {
+                noteFound->off = dTimeNow;
+            }
+        }
+    }
+    muxNotes.unlock();
+}
+
 int srate(jack_nframes_t nframes, void *arg)
 {
     printf("the sample rate is now %" PRIu32 "/sec\n", nframes);
@@ -89,6 +159,7 @@ int srate(jack_nframes_t nframes, void *arg)
     NoiseMaker *sound = (NoiseMaker *) arg;
     
     sound->SetTimeStep(nframes);
+    note_hz = sound->GetNoteHz();
 
     return 0;
 }
@@ -119,6 +190,8 @@ int main(int argc, char** argv)
     
     // Link noise function with sound machine
     sound.SetUserFunction(MakeNoise);
+    // Link Jack MIDI note generator
+    sound.SetMidiAddNote(AddNotes);
     
     jack_set_sample_rate_callback (jackclient, srate, &sound);
     
@@ -167,19 +240,11 @@ int main(int argc, char** argv)
     }
     
     char* all_keys = get_all_keys(input);
-    
-    // Sit in loop, capturing keyboard state changes and modify
-    // synthesizer output accordingly
-    int nCurrentKey = -1;	
-    bool bKeyPressed = false;
-    
-    auto clock_old_time = chrono::high_resolution_clock::now();
-    auto clock_real_time = chrono::high_resolution_clock::now();
-    double dElaspedTime = 0.0;
-    
+
     while(1)
     {
-        bKeyPressed = false;
+// Set to 1 for PC Keyboard Control - Also set scale to SCALE_DEFAULT in synth.h
+#if 0
         read_keys(input, all_keys);
         for (int k = 0; k < 16; k++)
         {
@@ -240,7 +305,8 @@ int main(int argc, char** argv)
         draw(2, 12, "|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |");
         draw(2, 13, "|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|");
 
-        mvprintw(15, 2, "Notes %d", vecNotes.size());
+#endif // 0
+        mvprintw(15, 2, "Notes %d: Note Value %d   ", vecNotes.size(), print_note);
 
         draw(2, 17, "Press Q to quit...");
         

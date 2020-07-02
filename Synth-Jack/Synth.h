@@ -60,8 +60,10 @@ namespace synth
     // scale to frequency conversion
 
     const int SCALE_DEFAULT = 0;
+    const int MIDI_NOTE = 1;
 
-    double scale(const int nNoteID, const int nScaleID = SCALE_DEFAULT);
+    /* For PC Keyboard set to SCALE_DEFAULT, Jack MIDI set to MIDI_NOTE */
+    double scale(const int nNoteID, const int nScaleID = MIDI_NOTE);
 
 
     ////////////////////////////////////
