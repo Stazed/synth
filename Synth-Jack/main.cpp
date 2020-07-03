@@ -120,8 +120,10 @@ void AddNotes(jack_midi_event_t midievent, double dTimeNow)
             n.id = k;
             n.on = dTimeNow;
             //n.channel = voice;
-            n.channel = 1;
+            n.channel = 1;  // FIXME
             n.active = true;
+            n.scale = synth::MIDI_NOTE;
+            n.volume = 1.0; // FIXME
 
             vecNotes.emplace_back(n);
         } else 
@@ -243,8 +245,6 @@ int main(int argc, char** argv)
 
     while(1)
     {
-// Set to 1 for PC Keyboard Control - Also set scale to SCALE_DEFAULT in synth.h
-#if 0
         read_keys(input, all_keys);
         for (int k = 0; k < 16; k++)
         {
@@ -268,6 +268,7 @@ int main(int argc, char** argv)
                     //n.channel = voice;
                     n.channel = 1;
                     n.active = true;
+                    n.scale = synth::SCALE_DEFAULT;
 
                     vecNotes.emplace_back(n);
                 } else 
@@ -305,7 +306,6 @@ int main(int argc, char** argv)
         draw(2, 12, "|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |");
         draw(2, 13, "|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|");
 
-#endif // 0
         mvprintw(15, 2, "Notes %d: Note Value %d   ", vecNotes.size(), print_note);
 
         draw(2, 17, "Press Q to quit...");

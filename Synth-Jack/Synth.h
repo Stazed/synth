@@ -27,19 +27,24 @@ namespace synth
     // A basic note
     struct note
     {
-        int id;     // Position in scale
-        double on;  // Time note was activated
-        double off; // Time note was deactivated
+        int id;         // Position in scale
+        double on;      // Time note was activated
+        double off;     // Time note was deactivated
+        double volume;  // MIDI velocity
         bool active;
-        int channel;
+        int channel;    // Instrument type
+        int scale;      // MIDI vs PC keyboard
+        
         
         note()
         {
             id = 0;
             on = 0.0;
             off = 0.0;
+            volume = 1.0;
             active = false;
             channel = 0;
+            scale = 1;  // MIDI_NOTE
         }
     };
     
@@ -172,14 +177,15 @@ namespace synth
 
         virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
         {
+            dVolume = n.volume; // FIXME
             double dAmplitude = synth::env(dTime, env, n.on, n.off);
             if (dAmplitude <= 0.0)
                 bNoteFinished = true;
             
             double dSound =
-                + 1.00 * synth::osc(n.on - dTime, synth::scale(n.id + 12), synth::OSC_SINE, 5.0, 0.001)
-                + 0.50 * synth::osc(n.on - dTime, synth::scale(n.id + 24))
-                + 0.25 * synth::osc(n.on - dTime, synth::scale(n.id + 36));
+                + 1.00 * synth::osc(n.on - dTime, synth::scale(n.id + 12, n.scale), synth::OSC_SINE, 5.0, 0.001)
+                + 0.50 * synth::osc(n.on - dTime, synth::scale(n.id + 24, n.scale))
+                + 0.25 * synth::osc(n.on - dTime, synth::scale(n.id + 36, n.scale));
             
             return dAmplitude * dSound * dVolume;
         }  
@@ -199,14 +205,15 @@ namespace synth
 
         virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
         {
+            dVolume = n.volume; // FIXME
             double dAmplitude = synth::env(dTime, env, n.on, n.off);
             if (dAmplitude <= 0.0)
                 bNoteFinished = true;
 
             double dSound =
-                +1.00 * synth::osc(n.on - dTime, synth::scale(n.id), synth::OSC_SQUARE, 5.0, 0.001)
-                + 0.50 * synth::osc(n.on - dTime, synth::scale(n.id + 12))
-                + 0.25 * synth::osc(n.on - dTime, synth::scale(n.id + 24));
+                +1.00 * synth::osc(n.on - dTime, synth::scale(n.id, n.scale), synth::OSC_SQUARE, 5.0, 0.001)
+                + 0.50 * synth::osc(n.on - dTime, synth::scale(n.id + 12, n.scale))
+                + 0.25 * synth::osc(n.on - dTime, synth::scale(n.id + 24, n.scale));
 
             return dAmplitude * dSound * dVolume;
         }
@@ -226,15 +233,16 @@ namespace synth
 
         virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
         {
+            dVolume = n.volume; // FIXME
             double dAmplitude = synth::env(dTime, env, n.on, n.off);
             if (dAmplitude <= 0.0)
                 bNoteFinished = true;
 
             double dSound =
                 //+ 1.0  * synth::osc(n.on - dTime, synth::scale(n.id-12), synth::OSC_SAW_ANA, 5.0, 0.001, 100)
-                + 1.00 * synth::osc(n.on - dTime, synth::scale(n.id), synth::OSC_SQUARE, 5.0, 0.001)
-                + 0.50 * synth::osc(n.on - dTime, synth::scale(n.id + 12), synth::OSC_SQUARE)
-                + 0.05  * synth::osc(n.on - dTime, synth::scale(n.id + 24), synth::OSC_NOISE);
+                + 1.00 * synth::osc(n.on - dTime, synth::scale(n.id, n.scale), synth::OSC_SQUARE, 5.0, 0.001)
+                + 0.50 * synth::osc(n.on - dTime, synth::scale(n.id + 12, n.scale), synth::OSC_SQUARE)
+                + 0.05  * synth::osc(n.on - dTime, synth::scale(n.id + 24, n.scale), synth::OSC_NOISE);
 
             return dAmplitude * dSound * dVolume;
         }
