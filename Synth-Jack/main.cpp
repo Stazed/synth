@@ -36,8 +36,6 @@ int print_note = 0;
 int print_channel = 0;
 int print_velocity = 0;
 
-extern jack_default_audio_sample_t *note_hz;    // note array
-
 static void signal_handler(int)
 {
     jack_client_close(jackclient);
@@ -154,7 +152,6 @@ int srate(jack_nframes_t nframes, void *arg)
     NoiseMaker *sound = (NoiseMaker *) arg;
     
     sound->SetTimeStep(nframes);
-    note_hz = sound->GetNoteHz();
 
     return 0;
 }
@@ -182,6 +179,8 @@ int main(int /* argc */, char** /* argv */)
     sound.SetUserFunction(MakeNoise);
     // Link Jack MIDI note generator
     sound.SetMidiAddNote(AddNotes);
+    // Set MIDI to frequency array
+    synth::calc_note_frqs();
     
     jack_set_sample_rate_callback (jackclient, srate, &sound);
     

@@ -7,13 +7,22 @@
 #include <jack/jack.h>
 #include "Synth.h"
 
-jack_default_audio_sample_t *note_hz;
+double d_Note_Hz[128];
 
 namespace synth
 {
     double w (double dHertz)
     {
         return dHertz * 2.0 * M_PI;
+    }
+    
+    void calc_note_frqs()
+    {
+        for(int i=0; i<128; i++)
+        {
+            // this converts a MIDI note to audio frequency (Hz)
+            d_Note_Hz[i] = (440.0 / 32.0) * pow(2, (((double)i - 9.0) / 12.0));
+        }
     }
     
     double osc(const double dTime, const double dHertz, const int nType,
@@ -60,7 +69,7 @@ namespace synth
         switch (nScaleID)
         {
             case MIDI_NOTE:
-                return note_hz[nNoteID];
+                return d_Note_Hz[nNoteID];
             
             case SCALE_DEFAULT: default:
                 return 256 * pow(1.0594630943592952645618252949463, nNoteID);

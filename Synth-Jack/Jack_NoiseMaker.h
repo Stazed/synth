@@ -44,7 +44,6 @@ public:
     {
         m_nSampleRate = sample_rate;
         m_nBlockSamples =  buffer_size;
-        calc_note_frqs();
         SetTimeStep(sample_rate);
         m_dGlobalTime = 0.0;
     }
@@ -73,11 +72,6 @@ public:
     void SetMidiAddNote(void(*func)(double, int, int, int, int))
     {
         m_MidiAddNote = func;
-    }
-    
-    jack_default_audio_sample_t *GetNoteHz()
-    {
-        return m_NoteHz;
     }
     
     double GetTime()
@@ -160,7 +154,6 @@ private:
     
     double (*m_userFunction)(int, double);
     void (*m_MidiAddNote)(double, int, int, int, int);
-    double *m_dFrequency;
     
     jack_nframes_t m_nSampleRate;
     unsigned int m_nChannels;
@@ -170,22 +163,7 @@ private:
     
     atomic<double> m_dGlobalTime;
     double m_dTimeStep;
-    
-    /* MIDI processing */
-    unsigned char m_note = 0;
      
-    jack_default_audio_sample_t m_NoteHz[128];    // note array
-    
-    /* MIDI to frequency (Hz) array */
-    void calc_note_frqs()
-    {
-        for(int i=0; i<128; i++)
-        {
-            // this converts a MIDI note to audio frequency (Hz)
-            m_NoteHz[i] = (440.0 / 32.0) * pow(2, (((jack_default_audio_sample_t)i - 9.0) / 12.0));
-        }
-    }
-    
 };
 
 

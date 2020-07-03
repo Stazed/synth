@@ -27,6 +27,10 @@ namespace synth
     // MIDI velocity conversion (1.0 / 127)
     const double MIDI_VELOCITY_RATIO = 0.007874;
     
+    
+    /* MIDI to frequency (Hz) array */
+    void calc_note_frqs();
+    
     // A basic note
     struct note
     {
