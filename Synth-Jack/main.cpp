@@ -32,9 +32,6 @@ using namespace std;
 extern jack_client_t *jackclient;
 jack_status_t status;
 char jackcliname[64];
-int print_note = 0;
-int print_channel = 0;
-int print_velocity = 0;
 
 static void signal_handler(int)
 {
@@ -90,12 +87,8 @@ double MakeNoise(int /* nChannel */, double dTime)
 }
 
 // For Jack MIDI
-void AddNotes(double dTimeNow, int k, int nKeyState, int nChannel, int nVelocity)
+void AddNotes(double dTimeNow, int k, int nKeyState, int nChannel, int nVelocity, int nScale)
 {
-    print_note = k;
-    print_channel = nChannel;
-    print_velocity = nVelocity;
-    
     // Check if note already exists in currently playing notes
     muxNotes.lock();
     auto noteFound = find_if(vecNotes.begin(), vecNotes.end(), [&k](synth::note const& item)
@@ -112,7 +105,7 @@ void AddNotes(double dTimeNow, int k, int nKeyState, int nChannel, int nVelocity
             //n.channel = voice;
             n.channel = nChannel;
             n.active = true;
-            n.scale = synth::MIDI_NOTE;
+            n.scale = nScale;
             n.volume = (double) nVelocity;
 
             vecNotes.emplace_back(n);
@@ -244,51 +237,7 @@ int main(int /* argc */, char** /* argv */)
             
             double dTimeNow = sound.GetTime();
             
-            // Check if note already exists in currently playing notes
-            muxNotes.lock();
-            auto noteFound = find_if(vecNotes.begin(), vecNotes.end(), [&k](synth::note const& item)
-                { return item.id == k; });
-
-            if(noteFound == vecNotes.end())
-            {
-                if(nKeyState)
-                {
-                    // Key pressed so create a new note
-                    synth::note n;
-                    n.id = k;
-                    n.on = dTimeNow;
-                    //n.channel = voice;
-                    n.channel = 1;
-                    n.active = true;
-                    n.scale = synth::SCALE_DEFAULT;
-
-                    vecNotes.emplace_back(n);
-                } else 
-                {
-                    // Note not in vector, but key hasn't been pressed
-                    // Nothing to do
-                }
-            }
-            else
-            {
-                // Note exists in the vector
-                if (nKeyState)
-                {
-                    if (noteFound->off > noteFound->on)
-                    {
-                        noteFound->on = dTimeNow;
-                        noteFound->active = true;
-                    }
-                } else
-                {
-                    // key released, switch it off
-                    if (noteFound->off < noteFound->on)
-                    {
-                        noteFound->off = dTimeNow;
-                    }
-                }
-            }
-            muxNotes.unlock();
+            AddNotes(dTimeNow, k, nKeyState, 1 /* voice */ , 127 /* 0 - 127 */, synth::SCALE_DEFAULT);
         }
 
         draw(2, 8,  "|   |   |   |   |   | |   |   |   |   | |   | |   |   |   |  ");
@@ -298,7 +247,7 @@ int main(int /* argc */, char** /* argv */)
         draw(2, 12, "|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |");
         draw(2, 13, "|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|");
 
-        mvprintw(15, 2, "Notes %d: Note %d: Channel %d: Velocity %d   ", vecNotes.size(), print_note, print_channel, print_velocity);
+        mvprintw(15, 2, "Notes %d   ", vecNotes.size());
 
         draw(2, 17, "Press Q to quit...");
         

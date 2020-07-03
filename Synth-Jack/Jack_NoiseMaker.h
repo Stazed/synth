@@ -69,7 +69,7 @@ public:
         m_userFunction = func;
     }
     
-    void SetMidiAddNote(void(*func)(double, int, int, int, int))
+    void SetMidiAddNote(void(*func)(double, int, int, int, int, int))
     {
         m_MidiAddNote = func;
     }
@@ -127,7 +127,7 @@ public:
             if(!velocity)
                 nOn_Off = NOTE_OFF;
 
-            m_MidiAddNote(m_dGlobalTime, note_key,nOn_Off, channel, velocity);
+            m_MidiAddNote(m_dGlobalTime, note_key,nOn_Off, channel, velocity, synth::MIDI_NOTE);
         }
 
         else if( ((*(midievent->buffer)) & 0xf0) == 0x80 )
@@ -137,7 +137,7 @@ public:
             note_key = midievent->buffer[1];
             velocity = 0;
             
-            m_MidiAddNote(m_dGlobalTime, note_key, NOTE_OFF, channel, velocity);
+            m_MidiAddNote(m_dGlobalTime, note_key, NOTE_OFF, channel, velocity, synth::MIDI_NOTE);
         }
         
         // return 0 if successful; otherwise jack_finish() will be called and
@@ -153,7 +153,7 @@ public:
 private:
     
     double (*m_userFunction)(int, double);
-    void (*m_MidiAddNote)(double, int, int, int, int);
+    void (*m_MidiAddNote)(double, int, int, int, int, int);
     
     jack_nframes_t m_nSampleRate;
     unsigned int m_nChannels;
