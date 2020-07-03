@@ -61,9 +61,6 @@ int jackprocess (jack_nframes_t nframes, void *arg)
     
     int i, event_count;
     jack_midi_event_t midievent;
-    jack_nframes_t event_index = 0;
-    
-    jack_default_audio_sample_t calculate_note = 0.0;
 
     jack_default_audio_sample_t *outl = (jack_default_audio_sample_t *)
                                         jack_port_get_buffer (outport_left, nframes);

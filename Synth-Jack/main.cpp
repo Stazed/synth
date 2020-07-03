@@ -9,6 +9,8 @@
  * Author: sspresto
  *
  * Created on June 26, 2020, 8:51 AM
+ * 
+ * g++ -g3 -ggdb -Wall -Wextra jack_process.cpp Synth.cpp main.cpp -ljack -lncurses -o synth-jack
  */
 
 #include <cstdlib>
@@ -36,7 +38,7 @@ int print_velocity = 0;
 
 extern jack_default_audio_sample_t *note_hz;    // note array
 
-static void signal_handler(int sig)
+static void signal_handler(int)
 {
     jack_client_close(jackclient);
     fprintf(stderr, "signal received, exiting ...\n");
@@ -62,7 +64,7 @@ void safe_remove(T &v, lambda f)
     }
 }
 
-double MakeNoise(int nChannel, double dTime)
+double MakeNoise(int /* nChannel */, double dTime)
 {	
     unique_lock<mutex> lm(muxNotes);
     double dMixedOutput = 0.0;
@@ -188,13 +190,8 @@ int srate(jack_nframes_t nframes, void *arg)
 /*
  * 
  */
-int main(int argc, char** argv)
+int main(int /* argc */, char** /* argv */)
 {
-    WINDOW *w = initscr();
-    cbreak();
-    nodelay(w, TRUE);
-    noecho();
-    
     char temp[256];
     sprintf (temp, "synth-jack");
     
@@ -223,6 +220,11 @@ int main(int argc, char** argv)
     signal(SIGINT, signal_handler);
     
     /* Ncurses Keyboard */
+    WINDOW *w = initscr();
+    cbreak();
+    nodelay(w, TRUE);
+    noecho();
+
     auto draw = [&w](int x, int y, std::string ws)
     {
         mvwaddstr(w, y, x, ws.c_str());
@@ -252,10 +254,10 @@ int main(int argc, char** argv)
     
     if(input == nullptr)
     {
-        mvprintw(2, 2, "NULL input file - check if user is in 'input' group");
-        mvprintw(3, 2, "Also check for correct symlink in LinuxInput.h start_input()");
-        wrefresh(w);
         endwin();
+        printf("NULL input file - check if user is in 'input' group\n");
+        printf("Also check for correct symlink in LinuxInput.h start_input()\n");
+        
         JACKfinish ();
         return 0;
     }
@@ -341,6 +343,10 @@ int main(int argc, char** argv)
     
     stop_input(input);
     free(all_keys);
+    
+    // Little hack: read all the characters that was produced on stdin so they won't appear in commamd prompt
+    while (getch() != ERR);
+    endwin();
 
     endwin();
 

@@ -60,7 +60,7 @@ public:
     }
     
     // Override to process current sample
-    virtual double UserProcess(int nChannel, double dTime)
+    virtual double UserProcess(int, double)
     {
         return 0.0;
     }
@@ -146,7 +146,7 @@ public:
         return 0; // Continue
     }
     
-    void jackshutdown (void *arg)
+    void jackshutdown (void *)
     {
         printf ("Jack Shut Down, sorry.\n");
     };

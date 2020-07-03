@@ -4,6 +4,7 @@
  * and open the template in the editor.
  */
 
+#include <jack/jack.h>
 #include "Synth.h"
 
 jack_default_audio_sample_t *note_hz;
