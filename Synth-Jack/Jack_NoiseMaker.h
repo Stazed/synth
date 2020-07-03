@@ -127,8 +127,13 @@ public:
             channel = 1 + (midievent->buffer[0] & EVENT_CHANNEL);
             note_key = midievent->buffer[1];
             velocity = midievent->buffer[2];
+            
+            // some hardware sends note-on with 0 velocity for note-off
+            int nOn_Off = NOTE_ON;
+            if(!velocity)
+                nOn_Off = NOTE_OFF;
 
-            m_MidiAddNote(m_dGlobalTime, note_key, NOTE_ON, channel, velocity);
+            m_MidiAddNote(m_dGlobalTime, note_key,nOn_Off, channel, velocity);
         }
 
         else if( ((*(midievent->buffer)) & 0xf0) == 0x80 )

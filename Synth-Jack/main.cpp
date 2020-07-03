@@ -80,7 +80,9 @@ double MakeNoise(int /* nChannel */, double dTime)
         
         dMixedOutput += dSound;
         
-        if(bNoteFinished && n.off > n.on)
+        // For MIDI, some notes can be rapid on/off and dTime is the same for both
+        // Thus the need for >= vs >
+        if(bNoteFinished && n.off >= n.on)
             n.active = false;
     }
     
@@ -90,42 +92,11 @@ double MakeNoise(int /* nChannel */, double dTime)
 }
 
 // For Jack MIDI
-
-/*
- - note (k)
- - note state - on or off (nKeyState)
- - global time (dTimeNow)
- - channel (voice)
- - volume (MIDI velocity)
- 
- */
-
-//void AddNotes(jack_midi_event_t midievent, double dTimeNow)
 void AddNotes(double dTimeNow, int k, int nKeyState, int nChannel, int nVelocity)
 {
     print_note = k;
     print_channel = nChannel;
     print_velocity = nVelocity;
-    
-#if 0
-    int k = 0;
-    int nKeyState = 0;
-
-    if( ((*(midievent.buffer) & 0xf0)) == 0x90 )
-    {
-        /* note on */
-        k = *(midievent.buffer + 1);          // get the MIDI note
-        nKeyState = 1;
-        print_note = k;
-    }
-    else if( ((*(midievent.buffer)) & 0xf0) == 0x80 )
-    {
-        /* note off */
-        k = *(midievent.buffer + 1);
-        nKeyState = 0;
-        print_note = k;
-    }
-#endif // 0
     
     // Check if note already exists in currently playing notes
     muxNotes.lock();
@@ -166,7 +137,8 @@ void AddNotes(double dTimeNow, int k, int nKeyState, int nChannel, int nVelocity
         } else
         {
             // key released, switch it off
-            if (noteFound->off < noteFound->on)
+            // For MIDI dTimeNow can be the same for on and off
+            if (noteFound->off <= noteFound->on)
             {
                 noteFound->off = dTimeNow;
             }
