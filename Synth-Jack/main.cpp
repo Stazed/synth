@@ -31,6 +31,8 @@ extern jack_client_t *jackclient;
 jack_status_t status;
 char jackcliname[64];
 int print_note = 0;
+int print_channel = 0;
+int print_velocity = 0;
 
 extern jack_default_audio_sample_t *note_hz;    // note array
 
@@ -86,8 +88,24 @@ double MakeNoise(int nChannel, double dTime)
 }
 
 // For Jack MIDI
-void AddNotes(jack_midi_event_t midievent, double dTimeNow)
+
+/*
+ - note (k)
+ - note state - on or off (nKeyState)
+ - global time (dTimeNow)
+ - channel (voice)
+ - volume (MIDI velocity)
+ 
+ */
+
+//void AddNotes(jack_midi_event_t midievent, double dTimeNow)
+void AddNotes(double dTimeNow, int k, int nKeyState, int nChannel, int nVelocity)
 {
+    print_note = k;
+    print_channel = nChannel;
+    print_velocity = nVelocity;
+    
+#if 0
     int k = 0;
     int nKeyState = 0;
 
@@ -105,7 +123,8 @@ void AddNotes(jack_midi_event_t midievent, double dTimeNow)
         nKeyState = 0;
         print_note = k;
     }
-
+#endif // 0
+    
     // Check if note already exists in currently playing notes
     muxNotes.lock();
     auto noteFound = find_if(vecNotes.begin(), vecNotes.end(), [&k](synth::note const& item)
@@ -120,10 +139,10 @@ void AddNotes(jack_midi_event_t midievent, double dTimeNow)
             n.id = k;
             n.on = dTimeNow;
             //n.channel = voice;
-            n.channel = 1;  // FIXME
+            n.channel = nChannel;
             n.active = true;
             n.scale = synth::MIDI_NOTE;
-            n.volume = 1.0; // FIXME
+            n.volume = (double) nVelocity;
 
             vecNotes.emplace_back(n);
         } else 
@@ -306,7 +325,7 @@ int main(int argc, char** argv)
         draw(2, 12, "|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |");
         draw(2, 13, "|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|");
 
-        mvprintw(15, 2, "Notes %d: Note Value %d   ", vecNotes.size(), print_note);
+        mvprintw(15, 2, "Notes %d: Note %d: Channel %d: Velocity %d   ", vecNotes.size(), print_note, print_channel, print_velocity);
 
         draw(2, 17, "Press Q to quit...");
         

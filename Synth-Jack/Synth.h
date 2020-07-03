@@ -24,6 +24,9 @@ namespace synth
     // Converts frequency (Hz) to angular velocity
     double w (double dHertz);
     
+    // MIDI velocity conversion (1.0 / 127)
+    const double MIDI_VELOCITY_RATIO = 0.007874;
+    
     // A basic note
     struct note
     {
@@ -41,7 +44,7 @@ namespace synth
             id = 0;
             on = 0.0;
             off = 0.0;
-            volume = 1.0;
+            volume = 127.0; // MIDI range 0 to 127
             active = false;
             channel = 0;
             scale = 1;  // MIDI_NOTE
@@ -177,7 +180,7 @@ namespace synth
 
         virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
         {
-            dVolume = n.volume; // FIXME
+            dVolume = n.volume * MIDI_VELOCITY_RATIO;
             double dAmplitude = synth::env(dTime, env, n.on, n.off);
             if (dAmplitude <= 0.0)
                 bNoteFinished = true;
@@ -205,7 +208,7 @@ namespace synth
 
         virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
         {
-            dVolume = n.volume; // FIXME
+            dVolume = n.volume * MIDI_VELOCITY_RATIO;
             double dAmplitude = synth::env(dTime, env, n.on, n.off);
             if (dAmplitude <= 0.0)
                 bNoteFinished = true;
@@ -233,7 +236,7 @@ namespace synth
 
         virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
         {
-            dVolume = n.volume; // FIXME
+            dVolume = n.volume * MIDI_VELOCITY_RATIO;
             double dAmplitude = synth::env(dTime, env, n.on, n.off);
             if (dAmplitude <= 0.0)
                 bNoteFinished = true;

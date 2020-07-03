@@ -26,6 +26,17 @@
 
 using namespace std;
 
+const unsigned char  EVENT_STATUS_BIT       = 0x80;
+const unsigned char  EVENT_NOTE_OFF         = 0x80;     // decimal 128
+const unsigned char  EVENT_NOTE_ON          = 0x90;     // decimal 144
+const unsigned char  EVENT_CONTROL_CHANGE   = 0xB0;     // decimal 176
+const unsigned char  EVENT_PROGRAM_CHANGE   = 0xC0;
+const unsigned char  EVENT_CLEAR_CHAN_MASK  = 0xF0;
+const unsigned char  EVENT_CHANNEL          = 0x0F;
+
+const int NOTE_ON   = 1;
+const int NOTE_OFF  = 0;
+
 class NoiseMaker
 {
 public:
@@ -59,7 +70,7 @@ public:
         m_userFunction = func;
     }
     
-    void SetMidiAddNote(void(*func)(jack_midi_event_t, double))
+    void SetMidiAddNote(void(*func)(double, int, int, int, int))
     {
         m_MidiAddNote = func;
     }
@@ -107,18 +118,27 @@ public:
     
     int ProcessMidi(jack_midi_event_t *midievent)
     {
+        /* events */
+        unsigned char channel = 0, note_key = 0, velocity = 0;
+        
         if( ((*(midievent->buffer) & 0xf0)) == 0x90 )
         {
             /* note on */
-            m_MidiAddNote(*midievent, m_dGlobalTime);
-            //printf("Note ON = %f\n", *m_dFrequency);
+            channel = 1 + (midievent->buffer[0] & EVENT_CHANNEL);
+            note_key = midievent->buffer[1];
+            velocity = midievent->buffer[2];
+
+            m_MidiAddNote(m_dGlobalTime, note_key, NOTE_ON, channel, velocity);
         }
 
         else if( ((*(midievent->buffer)) & 0xf0) == 0x80 )
         {
             /* note off */
-            m_MidiAddNote(*midievent, m_dGlobalTime);
-            //printf("Note OFF\n");
+            channel = 1 + (midievent->buffer[0] & EVENT_CHANNEL);
+            note_key = midievent->buffer[1];
+            velocity = 0;
+            
+            m_MidiAddNote(m_dGlobalTime, note_key, NOTE_OFF, channel, velocity);
         }
         
         // return 0 if successful; otherwise jack_finish() will be called and
@@ -134,7 +154,7 @@ public:
 private:
     
     double (*m_userFunction)(int, double);
-    void (*m_MidiAddNote)(jack_midi_event_t, double);
+    void (*m_MidiAddNote)(double, int, int, int, int);
     double *m_dFrequency;
     
     jack_nframes_t m_nSampleRate;
