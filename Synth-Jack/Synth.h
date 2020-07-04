@@ -15,6 +15,7 @@
 #define SYNTH_H
 
 #include <math.h>
+#include <string>
 
 namespace synth
 {
@@ -152,7 +153,7 @@ namespace synth
             }
 
             // amplitude should not be negative
-            if (dAmplitude <= 0.000)
+            if (dAmplitude <= 0.01)
             {
                 dAmplitude = 0.0;
             }
@@ -167,6 +168,8 @@ namespace synth
     {
         double dVolume;
         synth::envelope_adsr env;
+        double dMaxLifeTime;
+        std::string name;
         virtual double sound(const double dTime, synth::note n, bool &bNoteFinished) = 0;
     };
     
@@ -178,15 +181,16 @@ namespace synth
             env.dDecayTime = 1.0;
             env.dSustainAmplitude = 0.0;
             env.dReleaseTime = 1.0;
-            
+            dMaxLifeTime = 3.0;
             dVolume = 1.0;
+            name = "Bell";
         }
 
         virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
         {
             dVolume = n.volume * MIDI_VELOCITY_RATIO;
             double dAmplitude = synth::env(dTime, env, n.on, n.off);
-            if (dAmplitude <= 0.0)
+            if (dMaxLifeTime > 0.0 && dTime - n.on >= dMaxLifeTime)
                 bNoteFinished = true;
             
             double dSound =
@@ -206,15 +210,17 @@ namespace synth
             env.dDecayTime = 0.5;
             env.dSustainAmplitude = 0.8;
             env.dReleaseTime = 1.0;
-
+            dMaxLifeTime = 3.0;
             dVolume = 1.0;
+            name = "8-Bit Bell";
+            
         }
 
         virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
         {
             dVolume = n.volume * MIDI_VELOCITY_RATIO;
             double dAmplitude = synth::env(dTime, env, n.on, n.off);
-            if (dAmplitude <= 0.0)
+            if (dMaxLifeTime > 0.0 && dTime - n.on >= dMaxLifeTime)
                 bNoteFinished = true;
 
             double dSound =
@@ -234,8 +240,9 @@ namespace synth
             env.dDecayTime = 1.0;
             env.dSustainAmplitude = 0.95;
             env.dReleaseTime = 0.1;
-
+            dMaxLifeTime = -1.0;    // Note used
             dVolume = 1.0;
+            name = "Harmonica";
         }
 
         virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
@@ -254,6 +261,89 @@ namespace synth
             return dAmplitude * dSound * dVolume;
         }
     };
+    
+    struct instrument_drumkick : public instrument_base
+    {
+        instrument_drumkick()
+        {
+            env.dAttackTime = 0.01;
+            env.dDecayTime = 0.15;
+            env.dSustainAmplitude = 0.0;
+            env.dReleaseTime = 0.0;
+            dMaxLifeTime = 1.5;
+            dVolume = 1.0;
+            name = "Drum Kick";
+        }
+
+        virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
+        {
+            double dAmplitude = synth::env(dTime, env, n.on, n.off);
+            if(dMaxLifeTime > 0.0 && dTime - n.on >= dMaxLifeTime)
+                bNoteFinished = true;
+
+            double dSound =
+                + 0.99 * synth::osc(dTime - n.on, synth::scale(n.id - 36), synth::OSC_SINE, 1.0, 1.0)
+                + 0.01 * synth::osc(dTime - n.on, 0, synth::OSC_NOISE);
+
+            return dAmplitude * dSound * dVolume;
+        }
+    };
+
+    struct instrument_drumsnare : public instrument_base
+    {
+        instrument_drumsnare()
+        {
+            env.dAttackTime = 0.0;
+            env.dDecayTime = 0.2;
+            env.dSustainAmplitude = 0.0;
+            env.dReleaseTime = 0.0;
+            dMaxLifeTime = 1.0;
+            name = "Drum Snare";
+            dVolume = 1.0;
+        }
+
+        virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
+        {
+            double dAmplitude = synth::env(dTime, env, n.on, n.off);
+            if (dMaxLifeTime > 0.0 && dTime - n.on >= dMaxLifeTime)
+                bNoteFinished = true;
+
+            double dSound =
+                + 0.5 * synth::osc(dTime - n.on, synth::scale(n.id - 24), synth::OSC_SINE, 0.5, 1.0)
+                + 0.5 * synth::osc(dTime - n.on, 0, synth::OSC_NOISE);
+
+                return dAmplitude * dSound * dVolume;
+        }
+    };
+
+
+    struct instrument_drumhihat : public instrument_base
+    {
+        instrument_drumhihat()
+        {
+            env.dAttackTime = 0.01;
+            env.dDecayTime = 0.05;
+            env.dSustainAmplitude = 0.0;
+            env.dReleaseTime = 0.0;
+            dMaxLifeTime = 1.0;
+            name = "Drum HiHat";
+            dVolume = 0.5;
+        }
+
+        virtual double sound(const double dTime, synth::note n, bool &bNoteFinished)
+        {
+            double dAmplitude = synth::env(dTime, env, n.on, n.off);
+            if (dMaxLifeTime > 0.0 && dTime - n.on >= dMaxLifeTime)
+                bNoteFinished = true;
+
+            double dSound =
+                + 0.1 * synth::osc(dTime - n.on, synth::scale(n.id -12), synth::OSC_SQUARE, 1.5, 1)
+                + 0.9 * synth::osc(dTime - n.on, 0, synth::OSC_NOISE);
+
+            return dAmplitude * dSound * dVolume;
+        }
+    };
+
 }   // namespace synth
 
 #endif /* SYNTH_H */

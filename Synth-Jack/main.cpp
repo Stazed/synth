@@ -44,6 +44,10 @@ vector<synth::note> vecNotes;
 mutex muxNotes;
 synth::instrument_bell instBell;
 synth::instrument_harmonica instHarm;
+synth::instrument_drumkick instKick;
+synth::instrument_drumsnare instSnare;
+synth::instrument_drumhihat instHiHat;
+synth::instrument_bell8 instBell8;
 
 typedef bool(*lambda)(synth::note const& item);
 template<class T>
@@ -68,10 +72,34 @@ double MakeNoise(int /* nChannel */, double dTime)
     {
         bool bNoteFinished = false;
         double dSound = 0;
-        if(n.channel == 2)
-            dSound = instBell.sound(dTime, n, bNoteFinished);
-        if(n.channel == 1)
+        
+        switch(n.channel)
+        {
+        case 1:
             dSound = instHarm.sound(dTime, n, bNoteFinished) * 0.5;
+            break;
+
+        case 2:
+            dSound = instBell.sound(dTime, n, bNoteFinished);
+            break;
+
+        case 3:
+            dSound = instKick.sound(dTime, n, bNoteFinished);
+            break;
+
+        case 4:
+            dSound = instSnare.sound(dTime, n, bNoteFinished);
+            break;
+
+        case 5:
+            dSound = instHiHat.sound(dTime, n, bNoteFinished);
+            break;
+
+        case 6:
+            dSound = instBell8.sound(dTime, n, bNoteFinished);
+            break;
+
+        }
         
         dMixedOutput += dSound;
         
