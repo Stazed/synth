@@ -49,6 +49,8 @@ synth::instrument_drumsnare instSnare;
 synth::instrument_drumhihat instHiHat;
 synth::instrument_bell8 instBell8;
 
+int a_channel;
+
 typedef bool(*lambda)(synth::note const& item);
 template<class T>
 void safe_remove(T &v, lambda f)
@@ -77,26 +79,38 @@ double MakeNoise(int /* nChannel */, double dTime)
         {
         case 1:
             dSound = instHarm.sound(dTime, n, bNoteFinished) * 0.5;
+            if(bNoteFinished && n.off >= n.on)
+                n.active = false;
             break;
 
         case 2:
             dSound = instBell.sound(dTime, n, bNoteFinished);
+            if(bNoteFinished)
+                n.active = false;
             break;
 
         case 3:
             dSound = instKick.sound(dTime, n, bNoteFinished);
+            if(bNoteFinished)
+                n.active = false;
             break;
 
         case 4:
             dSound = instSnare.sound(dTime, n, bNoteFinished);
+            if(bNoteFinished)
+                n.active = false;
             break;
 
         case 5:
             dSound = instHiHat.sound(dTime, n, bNoteFinished);
+            if(bNoteFinished)
+                n.active = false;
             break;
 
         case 6:
             dSound = instBell8.sound(dTime, n, bNoteFinished);
+            if(bNoteFinished)
+                n.active = false;
             break;
 
         }
@@ -105,8 +119,8 @@ double MakeNoise(int /* nChannel */, double dTime)
         
         // For MIDI, some notes can be rapid on/off and dTime is the same for both
         // Thus the need for >= vs >
-        if(bNoteFinished && n.off >= n.on)
-            n.active = false;
+//        if(bNoteFinished)
+//            n.active = false;
     }
     
     safe_remove<vector<synth::note>>(vecNotes, [](synth::note const& item) {return item.active; });
@@ -118,9 +132,11 @@ double MakeNoise(int /* nChannel */, double dTime)
 void AddNotes(double dTimeNow, int k, int nKeyState, int nChannel, int nVelocity, int nScale)
 {
     // Check if note already exists in currently playing notes
+    a_channel = nChannel;
     muxNotes.lock();
+
     auto noteFound = find_if(vecNotes.begin(), vecNotes.end(), [&k](synth::note const& item)
-        { return item.id == k; });
+        { return item.id == k && item.channel == a_channel; });
 
     if(noteFound == vecNotes.end())
     {
@@ -131,7 +147,7 @@ void AddNotes(double dTimeNow, int k, int nKeyState, int nChannel, int nVelocity
             n.id = k;
             n.on = dTimeNow;
             //n.channel = voice;
-            n.channel = nChannel;
+            n.channel = a_channel;
             n.active = true;
             n.scale = nScale;
             n.volume = (double) nVelocity;
@@ -265,7 +281,7 @@ int main(int /* argc */, char** /* argv */)
             
             double dTimeNow = sound.GetTime();
             
-            AddNotes(dTimeNow, k, nKeyState, 1 /* voice */ , 127 /* 0 - 127 */, synth::SCALE_DEFAULT);
+            AddNotes(dTimeNow, k + 64, nKeyState, 1 /* voice */ , 127 /* 0 - 127 */, synth::SCALE_DEFAULT);
         }
 
         draw(2, 8,  "|   |   |   |   |   | |   |   |   |   | |   | |   |   |   |  ");

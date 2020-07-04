@@ -28,6 +28,9 @@ namespace synth
     // MIDI velocity conversion (1.0 / 127)
     const double MIDI_VELOCITY_RATIO = 0.007874;
     
+    // Drum note default
+    const int DRUM_NOTE = 64;
+    
     
     /* MIDI to frequency (Hz) array */
     void calc_note_frqs();
@@ -269,7 +272,7 @@ namespace synth
             env.dAttackTime = 0.01;
             env.dDecayTime = 0.15;
             env.dSustainAmplitude = 0.0;
-            env.dReleaseTime = 0.0;
+            env.dReleaseTime = 0.01;
             dMaxLifeTime = 1.5;
             dVolume = 1.0;
             name = "Drum Kick";
@@ -282,7 +285,7 @@ namespace synth
                 bNoteFinished = true;
 
             double dSound =
-                + 0.99 * synth::osc(dTime - n.on, synth::scale(n.id - 36), synth::OSC_SINE, 1.0, 1.0)
+                + 0.99 * synth::osc(dTime - n.on, synth::scale(DRUM_NOTE - 36, SCALE_DEFAULT), synth::OSC_SINE, 1.0, 1.0)
                 + 0.01 * synth::osc(dTime - n.on, 0, synth::OSC_NOISE);
 
             return dAmplitude * dSound * dVolume;
@@ -296,7 +299,7 @@ namespace synth
             env.dAttackTime = 0.0;
             env.dDecayTime = 0.2;
             env.dSustainAmplitude = 0.0;
-            env.dReleaseTime = 0.0;
+            env.dReleaseTime = 0.01;
             dMaxLifeTime = 1.0;
             name = "Drum Snare";
             dVolume = 1.0;
@@ -309,7 +312,7 @@ namespace synth
                 bNoteFinished = true;
 
             double dSound =
-                + 0.5 * synth::osc(dTime - n.on, synth::scale(n.id - 24), synth::OSC_SINE, 0.5, 1.0)
+                + 0.5 * synth::osc(dTime - n.on, synth::scale(DRUM_NOTE - 24, SCALE_DEFAULT), synth::OSC_SINE, 0.5, 1.0)
                 + 0.5 * synth::osc(dTime - n.on, 0, synth::OSC_NOISE);
 
                 return dAmplitude * dSound * dVolume;
@@ -324,7 +327,7 @@ namespace synth
             env.dAttackTime = 0.01;
             env.dDecayTime = 0.05;
             env.dSustainAmplitude = 0.0;
-            env.dReleaseTime = 0.0;
+            env.dReleaseTime = 0.01;
             dMaxLifeTime = 1.0;
             name = "Drum HiHat";
             dVolume = 0.5;
@@ -337,7 +340,7 @@ namespace synth
                 bNoteFinished = true;
 
             double dSound =
-                + 0.1 * synth::osc(dTime - n.on, synth::scale(n.id -12), synth::OSC_SQUARE, 1.5, 1)
+                + 0.1 * synth::osc(dTime - n.on, synth::scale(DRUM_NOTE -12, SCALE_DEFAULT), synth::OSC_SQUARE, 1.5, 1)
                 + 0.9 * synth::osc(dTime - n.on, 0, synth::OSC_NOISE);
 
             return dAmplitude * dSound * dVolume;

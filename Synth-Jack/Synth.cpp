@@ -72,7 +72,7 @@ namespace synth
                 return d_Note_Hz[nNoteID];
             
             case SCALE_DEFAULT: default:
-                return 256 * pow(1.0594630943592952645618252949463, nNoteID);
+                return 8 * pow(1.0594630943592952645618252949463, nNoteID);
         }
     }
     
