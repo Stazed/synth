@@ -49,7 +49,7 @@ synth::instrument_drumsnare instSnare;
 synth::instrument_drumhihat instHiHat;
 synth::instrument_bell8 instBell8;
 
-int a_channel;
+int nMidiChannel;
 
 typedef bool(*lambda)(synth::note const& item);
 template<class T>
@@ -67,7 +67,7 @@ void safe_remove(T &v, lambda f)
 
 double MakeNoise(int /* nChannel */, double dTime)
 {	
-    unique_lock<mutex> lm(muxNotes);
+//    unique_lock<mutex> lm(muxNotes);
     double dMixedOutput = 0.0;
     
     for (auto &n : vecNotes)
@@ -78,49 +78,35 @@ double MakeNoise(int /* nChannel */, double dTime)
         switch(n.channel)
         {
         case 1:
-            dSound = instHarm.sound(dTime, n, bNoteFinished) * 0.5;
-            if(bNoteFinished && n.off >= n.on)
-                n.active = false;
+            dSound = instHarm.sound(dTime, n, bNoteFinished);
             break;
 
         case 2:
             dSound = instBell.sound(dTime, n, bNoteFinished);
-            if(bNoteFinished)
-                n.active = false;
             break;
 
         case 3:
             dSound = instKick.sound(dTime, n, bNoteFinished);
-            if(bNoteFinished)
-                n.active = false;
             break;
 
         case 4:
             dSound = instSnare.sound(dTime, n, bNoteFinished);
-            if(bNoteFinished)
-                n.active = false;
             break;
 
         case 5:
             dSound = instHiHat.sound(dTime, n, bNoteFinished);
-            if(bNoteFinished)
-                n.active = false;
             break;
 
         case 6:
             dSound = instBell8.sound(dTime, n, bNoteFinished);
-            if(bNoteFinished)
-                n.active = false;
             break;
 
         }
         
         dMixedOutput += dSound;
         
-        // For MIDI, some notes can be rapid on/off and dTime is the same for both
-        // Thus the need for >= vs >
-//        if(bNoteFinished)
-//            n.active = false;
+        if(bNoteFinished)
+            n.active = false;
     }
     
     safe_remove<vector<synth::note>>(vecNotes, [](synth::note const& item) {return item.active; });
@@ -132,11 +118,11 @@ double MakeNoise(int /* nChannel */, double dTime)
 void AddNotes(double dTimeNow, int k, int nKeyState, int nChannel, int nVelocity, int nScale)
 {
     // Check if note already exists in currently playing notes
-    a_channel = nChannel;
-    muxNotes.lock();
+    nMidiChannel = nChannel;
+//    muxNotes.lock();
 
     auto noteFound = find_if(vecNotes.begin(), vecNotes.end(), [&k](synth::note const& item)
-        { return item.id == k && item.channel == a_channel; });
+        { return item.id == k && item.channel == nMidiChannel; });
 
     if(noteFound == vecNotes.end())
     {
@@ -147,7 +133,7 @@ void AddNotes(double dTimeNow, int k, int nKeyState, int nChannel, int nVelocity
             n.id = k;
             n.on = dTimeNow;
             //n.channel = voice;
-            n.channel = a_channel;
+            n.channel = nChannel;
             n.active = true;
             n.scale = nScale;
             n.volume = (double) nVelocity;
@@ -179,7 +165,7 @@ void AddNotes(double dTimeNow, int k, int nKeyState, int nChannel, int nVelocity
             }
         }
     }
-    muxNotes.unlock();
+//    muxNotes.unlock();
 }
 
 int srate(jack_nframes_t nframes, void *arg)
@@ -274,6 +260,7 @@ int main(int /* argc */, char** /* argv */)
 
     while(1)
     {
+#if 0
         read_keys(input, all_keys);
         for (int k = 0; k < 16; k++)
         {
@@ -290,7 +277,7 @@ int main(int /* argc */, char** /* argv */)
         draw(2, 11, "|     |     |     |     |     |     |     |     |     |     |");
         draw(2, 12, "|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |");
         draw(2, 13, "|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|");
-
+#endif // 0
         mvprintw(15, 2, "Notes %d   ", vecNotes.size());
 
         draw(2, 17, "Press Q to quit...");

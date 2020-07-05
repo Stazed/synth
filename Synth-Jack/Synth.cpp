@@ -54,7 +54,7 @@ namespace synth
         }
 
         case OSC_SAW_DIG: // saw wave (optimized / harsh / fast)
-            return (2.0 * M_PI) * (dHertz * M_PI * fmod(dTime, 1.0 / dHertz) - (M_PI / 2.0));
+            return (2.0 / M_PI) * (dHertz * M_PI * fmod(dTime, 1.0 / dHertz) - (M_PI / 2.0));
 
         case OSC_NOISE: // pseudo random noise
             return 2.0 * ((double)rand() / (double)RAND_MAX) - 1.0;

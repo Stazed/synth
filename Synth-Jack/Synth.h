@@ -156,7 +156,7 @@ namespace synth
             }
 
             // amplitude should not be negative
-            if (dAmplitude <= 0.01)
+            if (dAmplitude <= 0.0)
             {
                 dAmplitude = 0.0;
             }
@@ -197,9 +197,9 @@ namespace synth
                 bNoteFinished = true;
             
             double dSound =
-                + 1.00 * synth::osc(n.on - dTime, synth::scale(n.id + 12, n.scale), synth::OSC_SINE, 5.0, 0.001)
-                + 0.50 * synth::osc(n.on - dTime, synth::scale(n.id + 24, n.scale))
-                + 0.25 * synth::osc(n.on - dTime, synth::scale(n.id + 36, n.scale));
+                + 1.00 * synth::osc(dTime - n.on, synth::scale(n.id + 12, n.scale), synth::OSC_SINE, 5.0, 0.001)
+                + 0.50 * synth::osc(dTime - n.on, synth::scale(n.id + 24, n.scale))
+                + 0.25 * synth::osc(dTime - n.on, synth::scale(n.id + 36, n.scale));
             
             return dAmplitude * dSound * dVolume;
         }  
@@ -227,9 +227,9 @@ namespace synth
                 bNoteFinished = true;
 
             double dSound =
-                +1.00 * synth::osc(n.on - dTime, synth::scale(n.id, n.scale), synth::OSC_SQUARE, 5.0, 0.001)
-                + 0.50 * synth::osc(n.on - dTime, synth::scale(n.id + 12, n.scale))
-                + 0.25 * synth::osc(n.on - dTime, synth::scale(n.id + 24, n.scale));
+                +1.00 * synth::osc(dTime - n.on, synth::scale(n.id, n.scale), synth::OSC_SQUARE, 5.0, 0.001)
+                + 0.50 * synth::osc(dTime - n.on, synth::scale(n.id + 12, n.scale))
+                + 0.25 * synth::osc(dTime - n.on, synth::scale(n.id + 24, n.scale));
 
             return dAmplitude * dSound * dVolume;
         }
@@ -243,7 +243,7 @@ namespace synth
             env.dDecayTime = 1.0;
             env.dSustainAmplitude = 0.95;
             env.dReleaseTime = 0.1;
-            dMaxLifeTime = -1.0;    // Note used
+            dMaxLifeTime = -1.0;    // Not used
             dVolume = 1.0;
             name = "Harmonica";
         }
@@ -252,14 +252,14 @@ namespace synth
         {
             dVolume = n.volume * MIDI_VELOCITY_RATIO;
             double dAmplitude = synth::env(dTime, env, n.on, n.off);
-            if (dAmplitude <= 0.0)
+            if (dAmplitude <= 0.0 && n.off >= n.on)
                 bNoteFinished = true;
 
             double dSound =
-                //+ 1.0  * synth::osc(n.on - dTime, synth::scale(n.id-12), synth::OSC_SAW_ANA, 5.0, 0.001, 100)
-                + 1.00 * synth::osc(n.on - dTime, synth::scale(n.id, n.scale), synth::OSC_SQUARE, 5.0, 0.001)
-                + 0.50 * synth::osc(n.on - dTime, synth::scale(n.id + 12, n.scale), synth::OSC_SQUARE)
-                + 0.05  * synth::osc(n.on - dTime, synth::scale(n.id + 24, n.scale), synth::OSC_NOISE);
+                + 1.0  * synth::osc(dTime - n.on, synth::scale(n.id-12), synth::OSC_SAW_ANA, 5.0, 0.001, 100)
+                + 1.00 * synth::osc(dTime - n.on, synth::scale(n.id, n.scale), synth::OSC_SQUARE, 5.0, 0.001)
+                + 0.50 * synth::osc(dTime - n.on, synth::scale(n.id + 12, n.scale), synth::OSC_SQUARE)
+                + 0.05  * synth::osc(dTime - n.on, synth::scale(n.id + 24, n.scale), synth::OSC_NOISE);
 
             return dAmplitude * dSound * dVolume;
         }
@@ -296,7 +296,7 @@ namespace synth
     {
         instrument_drumsnare()
         {
-            env.dAttackTime = 0.0;
+            env.dAttackTime = 0.01;
             env.dDecayTime = 0.2;
             env.dSustainAmplitude = 0.0;
             env.dReleaseTime = 0.01;
