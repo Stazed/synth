@@ -256,7 +256,7 @@ namespace synth
                 bNoteFinished = true;
 
             double dSound =
-                + 1.0  * synth::osc(dTime - n.on, synth::scale(n.id-12), synth::OSC_SAW_ANA, 5.0, 0.001, 100)
+                + 1.0  * synth::osc(dTime - n.on, synth::scale(n.id-12), synth::OSC_SAW_DIG, 5.0, 0.001, 20)
                 + 1.00 * synth::osc(dTime - n.on, synth::scale(n.id, n.scale), synth::OSC_SQUARE, 5.0, 0.001)
                 + 0.50 * synth::osc(dTime - n.on, synth::scale(n.id + 12, n.scale), synth::OSC_SQUARE)
                 + 0.05  * synth::osc(dTime - n.on, synth::scale(n.id + 24, n.scale), synth::OSC_NOISE);

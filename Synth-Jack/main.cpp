@@ -67,7 +67,6 @@ void safe_remove(T &v, lambda f)
 
 double MakeNoise(int /* nChannel */, double dTime)
 {	
-//    unique_lock<mutex> lm(muxNotes);
     double dMixedOutput = 0.0;
     
     for (auto &n : vecNotes)
@@ -100,7 +99,20 @@ double MakeNoise(int /* nChannel */, double dTime)
         case 6:
             dSound = instBell8.sound(dTime, n, bNoteFinished);
             break;
-
+            
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+        case 12:
+        case 13:
+        case 14:
+        case 15:
+        case 16:
+        default :
+            dSound = instHarm.sound(dTime, n, bNoteFinished);
+            break;
         }
         
         dMixedOutput += dSound;
@@ -117,12 +129,13 @@ double MakeNoise(int /* nChannel */, double dTime)
 // For Jack MIDI
 void AddNotes(double dTimeNow, int k, int nKeyState, int nChannel, int nVelocity, int nScale)
 {
-    // Check if note already exists in currently playing notes
+    /* For searching for existing notes, we are checking both channel and note key. 
+       This is certainly not efficient and can be optimized */
+    
     nMidiChannel = nChannel;
-//    muxNotes.lock();
 
     auto noteFound = find_if(vecNotes.begin(), vecNotes.end(), [&k](synth::note const& item)
-        { return item.id == k && item.channel == nMidiChannel; });
+        { return item.id == k && item.channel == nMidiChannel; });  // FIXME
 
     if(noteFound == vecNotes.end())
     {
@@ -165,7 +178,6 @@ void AddNotes(double dTimeNow, int k, int nKeyState, int nChannel, int nVelocity
             }
         }
     }
-//    muxNotes.unlock();
 }
 
 int srate(jack_nframes_t nframes, void *arg)
@@ -177,6 +189,22 @@ int srate(jack_nframes_t nframes, void *arg)
     sound->SetTimeStep(nframes);
 
     return 0;
+}
+
+void keyboard(NoiseMaker *sound, FILE* input, char* all_keys, int keys[16])
+{
+    read_keys(input, all_keys);
+    for (int k = 0; k < 16; k++)
+    {
+        int nKeyState = check_key_state(all_keys, keys[k]);
+
+        double dTimeNow = sound->GetTime();
+
+        /* The '17' is for channel, which is used for the keyboard input 
+           Since we are checking notes by channel and key, this will avoid
+           conflict with MIDI notes - with max range of 1 - 16 */
+        AddNotes(dTimeNow, k + 64, nKeyState, 17 /* voice */ , 127 /* 0 - 127 */, synth::MIDI_NOTE);
+    }
 }
 
 /*
@@ -257,27 +285,19 @@ int main(int /* argc */, char** /* argv */)
     }
     
     char* all_keys = get_all_keys(input);
+    
+    sound.SetKeyboardInput(input, all_keys, keys);
+    sound.SetKeyboardProcess(keyboard);
 
     while(1)
     {
-#if 0
-        read_keys(input, all_keys);
-        for (int k = 0; k < 16; k++)
-        {
-            int nKeyState = check_key_state(all_keys, keys[k]);
-            
-            double dTimeNow = sound.GetTime();
-            
-            AddNotes(dTimeNow, k + 64, nKeyState, 1 /* voice */ , 127 /* 0 - 127 */, synth::SCALE_DEFAULT);
-        }
-
         draw(2, 8,  "|   |   |   |   |   | |   |   |   |   | |   | |   |   |   |  ");
         draw(2, 9,  "|   | S |   |   | F | | G |   |   | J | | K | | L |   |   |  ");
         draw(2, 10, "|   |___|   |   |___| |___|   |   |___| |___| |___|   |   |__");
         draw(2, 11, "|     |     |     |     |     |     |     |     |     |     |");
         draw(2, 12, "|  Z  |  X  |  C  |  V  |  B  |  N  |  M  |  ,  |  .  |  /  |");
         draw(2, 13, "|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|");
-#endif // 0
+
         mvprintw(15, 2, "Notes %d   ", vecNotes.size());
 
         draw(2, 17, "Press Q to quit...");

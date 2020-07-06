@@ -58,6 +58,18 @@ public:
         return false;
     }
     
+    void SetKeyboardInput(FILE* input, char* all_keys, int keys[])
+    {
+        m_input = input;
+        m_all_keys = all_keys;
+        m_keys = keys;
+    }
+    
+    void SetKeyboardProcess(void(*func) (NoiseMaker*, FILE*, char*, int*))
+    {
+        m_KeyboardInput = func;
+    }
+    
     // Override to process current sample
     virtual double UserProcess(int, double)
     {
@@ -89,6 +101,8 @@ public:
     
     int MainThread(float * efxoutl, float * efxoutr)
     {
+        m_KeyboardInput(this, m_input, m_all_keys, m_keys);
+        
         float nNewSample = 0.0;
 
         for (unsigned int n = 0; n < m_nBlockSamples; n++)
@@ -154,6 +168,7 @@ private:
     
     double (*m_userFunction)(int, double);
     void (*m_MidiAddNote)(double, int, int, int, int, int);
+    void (*m_KeyboardInput)(NoiseMaker*, FILE*, char*, int*);
     
     jack_nframes_t m_nSampleRate;
     unsigned int m_nChannels;
@@ -163,6 +178,11 @@ private:
     
     atomic<double> m_dGlobalTime;
     double m_dTimeStep;
+    
+    /* Keyboard Input */
+    FILE* m_input;
+    char* m_all_keys;
+    int* m_keys;
      
 };
 
